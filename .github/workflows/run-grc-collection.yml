@@ -8,6 +8,8 @@ on:
 jobs:
   collect-assets:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
     - name: Checkout Repository
@@ -60,6 +62,21 @@ jobs:
         Write-Host "Running Defender Endpoint Collector..." -ForegroundColor Yellow
         cd ../../Defender-Devices/powershell
         ./Get-DefenderDevices.ps1 -TenantId $env:GRC_TENANT_ID -ClientId $env:GRC_CLIENT_ID -CertificateBase64 $env:GRC_CERTIFICATE
+
+    - name: Generate HTML GRC Report
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Stop'
+        # Generate the report using the collected json data
+        cd common
+        ./Generate-GRCReport.ps1
+
+    - name: Commit and Push GRC Reports
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add exports/ docs/
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update GRC Audit report [skip ci]" && git push)
 
     - name: Upload Collected Assets
       uses: actions/upload-artifact@v4
