@@ -138,6 +138,15 @@ if (!$app -and $CreateNew) {
     if ($app) {
         $sp = Get-MgServicePrincipal -Filter "appId eq '$($app.AppId)'"
         Write-Host "Found existing App Registration '$appDisplayName' (ClientID: $($app.AppId))" -ForegroundColor Yellow
+        
+        # Export existing local certificate to ensure GitHub secrets are synced
+        $certs = Get-ChildItem -Path "Cert:\CurrentUser\My" | Where-Object { $_.Subject -eq "CN=$appDisplayName" }
+        if ($certs.Count -gt 0) {
+            $cert = $certs[0]
+            $certBytes = $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, "")
+            $certBase64 = [System.Convert]::ToBase64String($certBytes)
+            Write-Host "Found existing local certificate CN=$appDisplayName, preparing to sync secrets..." -ForegroundColor Cyan
+        }
     } else {
         Write-Error "No existing app found and -CreateNew switch was not specified."
         return
