@@ -116,8 +116,8 @@ if (!$app -and $CreateNew) {
     $cert = New-SelfSignedCertificate -Subject "CN=$appDisplayName" -CertStoreLocation "Cert:\CurrentUser\My" -KeyExportPolicy Exportable -KeySpec Signature
     $CertificateThumbprint = $cert.Thumbprint
     
-    # Export certificate data
-    $certBytes = $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx)
+    # Export certificate data (with empty password to ensure private key is included)
+    $certBytes = $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, "")
     $certBase64 = [System.Convert]::ToBase64String($certBytes)
     $cerRawData = $cert.RawData
     

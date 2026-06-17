@@ -34,7 +34,10 @@ function Connect-GRCEnvironment {
     if ($CertificateBase64 -and $ClientId -and $TenantId) {
         Write-Verbose "Initiating unattended certificate authentication..."
         $certBytes = [System.Convert]::FromBase64String($CertificateBase64)
-        $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($certBytes)
+        
+        # On Linux (GitHub Actions runners), loading PFX bytes with private keys requires
+        # providing the password parameter (even if empty) to decrypt the PKCS12 structure.
+        $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($certBytes, "")
         
         Connect-MgGraph -TenantId $TenantId -ClientId $ClientId -Certificate $cert
         return
