@@ -168,6 +168,26 @@ foreach ($permName in $requiredGraphPermissions) {
     }
 }
 
+# 4b. Assign Exchange Online API Permission (Exchange.ManageAsApp)
+Write-Host "Assigning Exchange Online API permissions..." -ForegroundColor Cyan
+$exoSp = Get-MgServicePrincipal -Filter "appId eq '00000002-0000-0ff1-ce00-000000000000'" -ErrorAction SilentlyContinue
+if ($exoSp) {
+    $exoRole = $exoSp.AppRoles | Where-Object { $_.Value -eq "Exchange.ManageAsApp" }
+    if ($exoRole) {
+        $existingExoAssignments = Get-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $sp.Id | Where-Object { $_.ResourceId -eq $exoSp.Id } | Select-Object -ExpandProperty AppRoleId
+        if ($existingExoAssignments -notcontains $exoRole.Id) {
+            Write-Host "Assigning Exchange Online Permission: Exchange.ManageAsApp" -ForegroundColor Cyan
+            New-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $sp.Id -BodyParameter @{
+                PrincipalId = $sp.Id
+                ResourceId  = $exoSp.Id
+                AppRoleId   = $exoRole.Id
+            } | Out-Null
+        } else {
+            Write-Host "Exchange Online Permission already present: Exchange.ManageAsApp" -ForegroundColor DarkGray
+        }
+    }
+}
+
 # 5. Assign Entra ID Compliance / Security Roles
 Write-Host "Assigning Entra ID Directory Roles..." -ForegroundColor Cyan
 foreach ($roleDef in $requiredComplianceRoles) {
