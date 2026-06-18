@@ -34,10 +34,8 @@ function Connect-GRCEnvironment {
     if ($CertificateBase64 -and $ClientId -and $TenantId) {
         Write-Verbose "Initiating unattended certificate authentication..."
         $certBytes = [System.Convert]::FromBase64String($CertificateBase64)
-        
-        # On Linux (GitHub Actions runners), loading PFX bytes with private keys requires
-        # providing the password parameter (even if empty) to decrypt the PKCS12 structure.
-        $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($certBytes, "")
+        $keyStorageFlags = [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::EphemeralKeySet
+        $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($certBytes, "", $keyStorageFlags)
         
         Connect-MgGraph -TenantId $TenantId -ClientId $ClientId -Certificate $cert
         return
@@ -108,23 +106,13 @@ function Connect-GRCExchange {
     if ($CertificateBase64 -and $ClientId -and $TenantId) {
         Write-Verbose "Initiating unattended Exchange Online certificate authentication..."
         $certBytes = [System.Convert]::FromBase64String($CertificateBase64)
+        $keyStorageFlags = [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::EphemeralKeySet
+        $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($certBytes, "", $keyStorageFlags)
         
-        if (-not $IsWindows) {
-            Write-Verbose "Non-Windows environment detected. Writing certificate to a temporary file for authentication..."
-            $tempCertPath = [System.IO.Path]::GetTempFileName() + ".pfx"
-            try {
-                [System.IO.File]::WriteAllBytes($tempCertPath, $certBytes)
-                $securePassword = [System.Security.SecureString]::new()
-                Connect-ExchangeOnline -CertificateFilePath $tempCertPath -CertificatePassword $securePassword -AppId $ClientId -Organization $TenantId -ShowBanner:$false
-            } finally {
-                if (Test-Path $tempCertPath) {
-                    Remove-Item $tempCertPath -Force -ErrorAction SilentlyContinue
-                }
-            }
-        } else {
-            $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($certBytes, "")
-            Connect-ExchangeOnline -Certificate $cert -AppId $ClientId -Organization $TenantId -ShowBanner:$false
-        }
+        # Ensure any existing Exchange sessions are cleaned up first to avoid session conflicts
+        Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue | Out-Null
+        
+        Connect-ExchangeOnline -Certificate $cert -AppId $ClientId -Organization $TenantId -ShowBanner:$false
         return
     }
 
@@ -156,6 +144,8 @@ function Connect-GRCCompliance {
     if ($CertificateBase64 -and $ClientId -and $TenantId) {
         Write-Verbose "Initiating unattended Security & Compliance Center certificate authentication..."
         $certBytes = [System.Convert]::FromBase64String($CertificateBase64)
+        $keyStorageFlags = [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::EphemeralKeySet
+        $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($certBytes, "", $keyStorageFlags)
         
         # Connect-IPPSSession requires the primary domain name (e.g. *.onmicrosoft.com) for -Organization.
         # If a Tenant ID GUID is passed, it throws a NullReferenceException ("Object reference not set to an instance of an object").
@@ -176,22 +166,10 @@ function Connect-GRCCompliance {
             }
         }
         
-        if (-not $IsWindows) {
-            Write-Verbose "Non-Windows environment detected. Writing certificate to a temporary file for IPPS authentication..."
-            $tempCertPath = [System.IO.Path]::GetTempFileName() + ".pfx"
-            try {
-                [System.IO.File]::WriteAllBytes($tempCertPath, $certBytes)
-                $securePassword = [System.Security.SecureString]::new()
-                Connect-IPPSSession -CertificateFilePath $tempCertPath -CertificatePassword $securePassword -AppId $ClientId -Organization $orgDomain -ShowBanner:$false
-            } finally {
-                if (Test-Path $tempCertPath) {
-                    Remove-Item $tempCertPath -Force -ErrorAction SilentlyContinue
-                }
-            }
-        } else {
-            $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($certBytes, "")
-            Connect-IPPSSession -Certificate $cert -AppId $ClientId -Organization $orgDomain -ShowBanner:$false
-        }
+        # Ensure any existing Exchange/Compliance sessions are cleaned up first to avoid session conflicts
+        Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue | Out-Null
+        
+        Connect-IPPSSession -Certificate $cert -AppId $ClientId -Organization $orgDomain -ShowBanner:$false
         return
     }
 
