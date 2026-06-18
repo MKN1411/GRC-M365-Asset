@@ -18,11 +18,41 @@ jobs:
     - name: Set up PowerShell modules
       shell: pwsh
       run: |
-        # Install Graph Authentication, applications, and Exchange modules silently
         $ErrorActionPreference = 'Stop'
-        Install-Module -Name Microsoft.Graph.Authentication -Force -Scope CurrentUser
-        Install-Module -Name Microsoft.Graph.Applications -Force -Scope CurrentUser
-        Install-Module -Name ExchangeOnlineManagement -Force -Scope CurrentUser
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        
+        # Try to register standard PSGallery if broken
+        try {
+            if (-not (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue)) {
+                Register-PSRepository -Default -ErrorAction SilentlyContinue
+            }
+            Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction SilentlyContinue
+        } catch {}
+
+        # Install modules with retry logic and fallback
+        $modules = @("Microsoft.Graph.Authentication", "Microsoft.Graph.Applications", "ExchangeOnlineManagement")
+        foreach ($module in $modules) {
+            Write-Host "Installing module: $module"
+            $retryCount = 0
+            $success = $false
+            while (-not $success -and $retryCount -lt 3) {
+                try {
+                    Install-Module -Name $module -Force -Scope CurrentUser -AllowClobber -ErrorAction Stop
+                    $success = $true
+                } catch {
+                    $retryCount++
+                    Write-Warning "Failed to install $module (Attempt $retryCount/3): $_"
+                    if ($retryCount -lt 3) { Start-Sleep -Seconds 5 }
+                }
+            }
+            if (-not $success) {
+                if (Get-Module -ListAvailable -Name $module) {
+                    Write-Host "$module is already pre-installed, continuing..."
+                } else {
+                    throw "Failed to install module $module after 3 attempts."
+                }
+            }
+        }
 
     - name: Execute GRC Collectors
       shell: pwsh
