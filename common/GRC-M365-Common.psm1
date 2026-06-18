@@ -117,4 +117,38 @@ function Connect-GRCExchange {
     Write-Error "Invalid authentication parameters for Exchange. Specify either -Interactive or -CertificateBase64, -ClientId, and -TenantId."
 }
 
-Export-ModuleMember -Function Connect-GRCEnvironment, Connect-GRCExchange, Export-GRCAssetData
+function Connect-GRCCompliance {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $false)]
+        [string]$TenantId,
+
+        [Parameter(Mandatory = $false)]
+        [string]$ClientId,
+
+        [Parameter(Mandatory = $false)]
+        [string]$CertificateBase64,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$Interactive
+    )
+
+    if ($Interactive) {
+        Write-Verbose "Initiating interactive Security & Compliance Center authentication..."
+        Connect-IPPSSession -ShowBanner:$false
+        return
+    }
+
+    if ($CertificateBase64 -and $ClientId -and $TenantId) {
+        Write-Verbose "Initiating unattended Security & Compliance Center certificate authentication..."
+        $certBytes = [System.Convert]::FromBase64String($CertificateBase64)
+        $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($certBytes, "")
+        
+        Connect-IPPSSession -Certificate $cert -AppId $ClientId -Organization $TenantId -ShowBanner:$false
+        return
+    }
+
+    Write-Error "Invalid authentication parameters for IPPS. Specify either -Interactive or -CertificateBase64, -ClientId, and -TenantId."
+}
+
+Export-ModuleMember -Function Connect-GRCEnvironment, Connect-GRCExchange, Connect-GRCCompliance, Export-GRCAssetData

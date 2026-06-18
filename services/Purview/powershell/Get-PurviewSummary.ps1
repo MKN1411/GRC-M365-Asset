@@ -48,6 +48,19 @@ try {
     return
 }
 
+# 1b. Establish connection to Security & Compliance Center for DLP Policies
+$ippsConnected = $false
+try {
+    if ($Interactive) {
+        Connect-GRCCompliance -Interactive
+    } else {
+        Connect-GRCCompliance -TenantId $TenantId -ClientId $ClientId -CertificateBase64 $CertificateBase64
+    }
+    $ippsConnected = $true
+} catch {
+    Write-Warning "Security & Compliance Center authentication failed (DLP policies won't be collected): $_"
+}
+
 # 2. Query Purview Settings using REST calls
 $reportData = [Ordered]@{
     TotalSensitivityLabels   = 0
@@ -101,19 +114,23 @@ try {
         }
     }
 
-    # Query DLP Policies (using beta endpoints if v1.0 is limited)
-    $dlpResponse = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/beta/informationProtection/dataLossPrevention/policies" -ErrorAction SilentlyContinue
-    if ($dlpResponse -and $dlpResponse.value) {
-        $reportData.TotalDlpPolicies = @($dlpResponse.value).Count
-        $reportData.DlpPolicyNames = ($dlpResponse.value | Select-Object -ExpandProperty name) -join '; '
-        # Collect DLP Policy details
-        $reportData.DlpPoliciesDetails = $dlpResponse.value | ForEach-Object {
-            [Ordered]@{
-                Id          = $_.id
-                Name        = $_.name
-                Description = $_.description
-                State       = $_.state
+    # Query DLP Policies (using Exchange Online Security & Compliance PowerShell)
+    if ($ippsConnected) {
+        try {
+            $dlpPolicies = Get-DlpCompliancePolicy -ErrorAction Stop
+            $reportData.TotalDlpPolicies = @($dlpPolicies).Count
+            $reportData.DlpPolicyNames = ($dlpPolicies | Select-Object -ExpandProperty Name) -join '; '
+            # Collect DLP Policy details
+            $reportData.DlpPoliciesDetails = $dlpPolicies | ForEach-Object {
+                [Ordered]@{
+                    Id          = $_.Identity.ToString()
+                    Name        = $_.Name
+                    Description = $_.Comment
+                    State       = $_.Mode.ToString()
+                }
             }
+        } catch {
+            Write-Warning "Could not query DLP policies via Security & Compliance: $_"
         }
     }
 
@@ -161,6 +178,11 @@ try {
 
 } catch {
     Write-Warning "Could not query all Microsoft Purview endpoints: $_"
+}
+
+# Disconnect compliance sessions
+if ($ippsConnected) {
+    Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue | Out-Null
 }
 
 # 3. Handle Outputs based on execution scope

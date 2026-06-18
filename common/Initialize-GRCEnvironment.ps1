@@ -80,7 +80,8 @@ $requiredGraphPermissions = @(
     "EntitlementManagement.Read.All",
     "InformationProtectionPolicy.Read.All",
     "RecordsManagement.Read.All",
-    "SensitivityLabels.Read.All"
+    "SensitivityLabels.Read.All",
+    "AccessReview.Read.All"
 )
 
 # Define Exchange Online Role Groups
