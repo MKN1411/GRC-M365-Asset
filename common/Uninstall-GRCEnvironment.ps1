@@ -56,7 +56,7 @@ foreach ($m in $requiredModules) {
 
 # 2. Connect to Microsoft Graph (Delegated)
 Write-Host "Connecting to Microsoft Graph (delegated as $AdminUpn)..." -ForegroundColor Cyan
-Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All', 'AppRoleAssignment.ReadWrite.All', 'RoleManagement.ReadWrite.Directory', 'Directory.Read.All' -NoWelcome
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All', 'AppRoleAssignment.ReadWrite.All', 'RoleManagement.ReadWrite.Directory', 'Directory.Read.All' -NoWelcome -UseDeviceAuthentication
 
 # 3. Locate App and Service Principal
 $app = Get-MgApplication -Filter "displayName eq '$appDisplayName'" -ErrorAction SilentlyContinue

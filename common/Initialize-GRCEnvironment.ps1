@@ -69,14 +69,16 @@ $requiredGraphPermissions = @(
     "DeviceManagementRBAC.Read.All",
     "DeviceManagementApps.Read.All",
     "SecurityEvents.Read.All",
-    "SharepointTenantSettings.Read.All",
+    "SharePointTenantSettings.Read.All",
     "TeamSettings.Read.All",
     "TeamworkAppSettings.Read.All",
     "Team.ReadBasic.All",
     "TeamMember.Read.All",
     "Channel.ReadBasic.All",
     "Reports.Read.All",
-    "Sites.Read.All"
+    "Sites.Read.All",
+    "EntitlementManagement.Read.All",
+    "InformationProtectionPolicy.Read.All"
 )
 
 # Define Exchange Online Role Groups
@@ -105,7 +107,7 @@ foreach ($m in $requiredModules) {
 
 # 2. Authenticate Delegated to Graph for creation and roles binding
 Write-Host "Connecting to Microsoft Graph (delegated as $AdminUpn)..." -ForegroundColor Cyan
-Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All', 'AppRoleAssignment.ReadWrite.All', 'RoleManagement.ReadWrite.Directory', 'Directory.Read.All' -NoWelcome
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All', 'AppRoleAssignment.ReadWrite.All', 'RoleManagement.ReadWrite.Directory', 'Directory.Read.All' -NoWelcome -UseDeviceAuthentication
 
 # 3. Create self-signed certificate and register App Registration
 $appDisplayName = "GRC-M365-Asset-$AppSuffix"

@@ -92,16 +92,24 @@ try {
     & "$rootPath/services/Devices/Defender-Devices/powershell/Get-DefenderDevices.ps1" @authArgs
 
     # 7. Exchange Online
-    Write-Host "`n[7/9] Running Exchange Online Summary Collector..." -ForegroundColor Yellow
+    Write-Host "`n[7/11] Running Exchange Online Summary Collector..." -ForegroundColor Yellow
     & "$rootPath/services/ExchangeOnline/powershell/Get-ExchangeSummary.ps1" @authArgs
 
     # 8. SharePoint Online
-    Write-Host "`n[8/9] Running SharePoint Online Summary Collector..." -ForegroundColor Yellow
+    Write-Host "`n[8/11] Running SharePoint Online Summary Collector..." -ForegroundColor Yellow
     & "$rootPath/services/SharePoint/powershell/Get-SharePointSummary.ps1" @authArgs
 
     # 9. Microsoft Teams
-    Write-Host "`n[9/9] Running Microsoft Teams Summary Collector..." -ForegroundColor Yellow
+    Write-Host "`n[9/11] Running Microsoft Teams Summary Collector..." -ForegroundColor Yellow
     & "$rootPath/services/Teams/powershell/Get-TeamsSummary.ps1" @authArgs
+
+    # 10. Entra ID Governance
+    Write-Host "`n[10/11] Running Entra ID Governance Summary Collector..." -ForegroundColor Yellow
+    & "$rootPath/services/EntraID/Governance/powershell/Get-EntraGovernanceSummary.ps1" @authArgs
+
+    # 11. Purview Summary
+    Write-Host "`n[11/11] Running Purview Summary Collector..." -ForegroundColor Yellow
+    & "$rootPath/services/Purview/powershell/Get-PurviewSummary.ps1" @authArgs
 
 } catch {
     Write-Error "Error during collection run: $_"
