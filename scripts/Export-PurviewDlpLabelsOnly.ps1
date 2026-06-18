@@ -18,12 +18,12 @@
     does not support app-only permissions. Instead, it connects to Security & Compliance
     PowerShell with Connect-IPPSSession and reads labels with Get-ComplianceTag.
 
-    This version supports a PFX certificate with an empty password ("").
-    For an empty certificate password, it creates an empty SecureString instead of calling
-    ConvertTo-SecureString -String "", because PowerShell rejects empty strings there.
+    Version 4 uses Connect-IPPSSession -Certificate with an X509Certificate2 object.
+    This avoids local certificate store logic, thumbprints, and CertificateFilePath behavior
+    with an empty PFX password on Linux runners.
 
 .PARAMETER OutputDirectory
-    Directory where the JSON and CSV output files are written.
+    Directory where the JSON, CSV, and connection log output files are written.
 
 .PARAMETER IncludeRawObject
     Adds a compressed JSON representation of the raw Get-ComplianceTag object per label.
@@ -41,8 +41,6 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-
-$script:TemporaryCertificatePath = $null
 
 function Test-GrcRequiredValue {
     [CmdletBinding()]
@@ -83,40 +81,67 @@ Set one of these GitHub repository secrets:
 '@
 }
 
-function New-GrcTemporaryPfxFile {
+function ConvertFrom-GrcBase64PfxCertificate {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
-        [string] $Base64Pfx
+        [string] $Base64Pfx,
+
+        [Parameter()]
+        [AllowEmptyString()]
+        [string] $Password = ''
     )
 
     $certificateBytes = [Convert]::FromBase64String($Base64Pfx)
-    $certificateDirectory = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath 'grc-certificates'
 
-    if (-not (Test-Path -Path $certificateDirectory)) {
-        New-Item -Path $certificateDirectory -ItemType Directory -Force | Out-Null
-    }
+    $keyStorageFlags =
+        [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::EphemeralKeySet -bor
+        [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable
 
-    $certificatePath = Join-Path -Path $certificateDirectory -ChildPath "grc-purview-$([guid]::NewGuid()).pfx"
-    [System.IO.File]::WriteAllBytes($certificatePath, $certificateBytes)
-
-    return $certificatePath
-}
-
-function ConvertTo-GrcSecureString {
-    [CmdletBinding()]
-    param(
-        [Parameter()]
-        [AllowEmptyString()]
-        [string] $PlainText = ''
+    $certificate = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new(
+        $certificateBytes,
+        $Password,
+        $keyStorageFlags
     )
 
-    if ([string]::IsNullOrEmpty($PlainText)) {
-        return [System.Security.SecureString]::new()
+    if (-not $certificate.HasPrivateKey) {
+        throw 'The certificate loaded from GRC_CERTIFICATE does not contain a private key. Use a base64 encoded PFX file, not a CER file.'
     }
 
-    return ConvertTo-SecureString -String $PlainText -AsPlainText -Force
+    return $certificate
+}
+
+function Get-GrcCertificateSummary {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $Certificate
+    )
+
+    $privateKeyType = $null
+
+    try {
+        $rsaPrivateKey = $Certificate.GetRSAPrivateKey()
+        if ($null -ne $rsaPrivateKey) {
+            $privateKeyType = $rsaPrivateKey.GetType().FullName
+        }
+    }
+    catch {
+        $privateKeyType = "Unavailable: $($_.Exception.Message)"
+    }
+
+    [pscustomobject]@{
+        Subject                = $Certificate.Subject
+        Issuer                 = $Certificate.Issuer
+        Thumbprint             = $Certificate.Thumbprint
+        NotBeforeUtc           = $Certificate.NotBefore.ToUniversalTime().ToString('o')
+        NotAfterUtc            = $Certificate.NotAfter.ToUniversalTime().ToString('o')
+        HasPrivateKey          = $Certificate.HasPrivateKey
+        PublicKeyAlgorithm     = $Certificate.PublicKey.Oid.FriendlyName
+        SignatureAlgorithm     = $Certificate.SignatureAlgorithm.FriendlyName
+        PrivateKeyRuntimeType  = $privateKeyType
+    }
 }
 
 function Connect-GrcComplianceSession {
@@ -131,11 +156,11 @@ function Connect-GrcComplianceSession {
         [string] $Organization,
 
         [Parameter(Mandatory)]
-        [ValidateNotNullOrEmpty()]
-        [string] $CertificateFilePath,
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $Certificate,
 
         [Parameter(Mandatory)]
-        [securestring] $CertificatePassword
+        [ValidateNotNullOrEmpty()]
+        [string] $LogDirectory
     )
 
     Import-Module ExchangeOnlineManagement -ErrorAction Stop
@@ -150,22 +175,20 @@ function Connect-GrcComplianceSession {
 
     Write-Host "ExchangeOnlineManagement version: $($module.Version)"
     Write-Host "Connecting to Security & Compliance PowerShell for organization '$Organization'."
+    Write-Host "Writing IPPS logs to '$LogDirectory'."
 
-    $logDirectory = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath 'grc-ipps-logs'
-
-    if (-not (Test-Path -Path $logDirectory)) {
-        New-Item -Path $logDirectory -ItemType Directory -Force | Out-Null
+    if (-not (Test-Path -Path $LogDirectory)) {
+        New-Item -Path $LogDirectory -ItemType Directory -Force | Out-Null
     }
 
     Connect-IPPSSession `
         -AppId $ClientId `
-        -CertificateFilePath $CertificateFilePath `
-        -CertificatePassword $CertificatePassword `
+        -Certificate $Certificate `
         -Organization $Organization `
         -CommandName Get-ComplianceTag `
         -ShowBanner:$false `
         -EnableErrorReporting `
-        -LogDirectoryPath $logDirectory
+        -LogDirectoryPath $LogDirectory
 }
 
 function Get-GrcObjectPropertyValue {
@@ -239,10 +262,6 @@ function Save-GrcOutput {
         [string] $Organization
     )
 
-    if (-not (Test-Path -Path $Directory)) {
-        New-Item -Path $Directory -ItemType Directory -Force | Out-Null
-    }
-
     $timestamp = (Get-Date).ToUniversalTime().ToString('yyyyMMdd-HHmmss')
     $jsonPath = Join-Path -Path $Directory -ChildPath "purview-retention-labels-$timestamp.json"
     $csvPath = Join-Path -Path $Directory -ChildPath "purview-retention-labels-$timestamp.csv"
@@ -272,6 +291,15 @@ try {
     Test-GrcRequiredValue -Value $env:GRC_CLIENT_ID -Name 'GRC_CLIENT_ID'
     Test-GrcRequiredValue -Value $env:GRC_CERTIFICATE -Name 'GRC_CERTIFICATE'
 
+    if (-not (Test-Path -Path $OutputDirectory)) {
+        New-Item -Path $OutputDirectory -ItemType Directory -Force | Out-Null
+    }
+
+    $logDirectory = Join-Path -Path $OutputDirectory -ChildPath 'ipps-logs'
+    if (-not (Test-Path -Path $logDirectory)) {
+        New-Item -Path $logDirectory -ItemType Directory -Force | Out-Null
+    }
+
     $organization = Get-GrcOrganizationName
 
     $certificatePasswordValue = ''
@@ -279,15 +307,26 @@ try {
         $certificatePasswordValue = $env:GRC_CERTIFICATE_PASSWORD
     }
 
-    Write-Host 'Writing temporary PFX certificate file from GRC_CERTIFICATE secret.'
-    $script:TemporaryCertificatePath = New-GrcTemporaryPfxFile -Base64Pfx $env:GRC_CERTIFICATE
-    $certificatePassword = ConvertTo-GrcSecureString -PlainText $certificatePasswordValue
+    Write-Host 'Loading PFX certificate object from GRC_CERTIFICATE secret.'
+    $certificate = ConvertFrom-GrcBase64PfxCertificate `
+        -Base64Pfx $env:GRC_CERTIFICATE `
+        -Password $certificatePasswordValue
+
+    $certificateSummary = Get-GrcCertificateSummary -Certificate $certificate
+    $certificateSummary |
+        ConvertTo-Json -Depth 10 |
+        Out-File -FilePath (Join-Path -Path $OutputDirectory -ChildPath 'certificate-diagnostics.json') -Encoding utf8
+
+    Write-Host "Certificate subject: $($certificateSummary.Subject)"
+    Write-Host "Certificate thumbprint: $($certificateSummary.Thumbprint)"
+    Write-Host "Certificate has private key: $($certificateSummary.HasPrivateKey)"
+    Write-Host "Certificate private key runtime type: $($certificateSummary.PrivateKeyRuntimeType)"
 
     Connect-GrcComplianceSession `
         -ClientId $env:GRC_CLIENT_ID `
         -Organization $organization `
-        -CertificateFilePath $script:TemporaryCertificatePath `
-        -CertificatePassword $certificatePassword
+        -Certificate $certificate `
+        -LogDirectory $logDirectory
 
     Write-Host 'Reading Purview retention labels with Get-ComplianceTag.'
     $labels = @(Get-GrcRetentionLabelSummary -IncludeRawObject:$IncludeRawObject)
@@ -315,8 +354,4 @@ catch {
 }
 finally {
     Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue
-
-    if (-not [string]::IsNullOrWhiteSpace($script:TemporaryCertificatePath) -and (Test-Path -Path $script:TemporaryCertificatePath)) {
-        Remove-Item -Path $script:TemporaryCertificatePath -Force -ErrorAction SilentlyContinue
-    }
 }
