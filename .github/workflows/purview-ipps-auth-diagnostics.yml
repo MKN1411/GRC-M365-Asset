@@ -36,13 +36,17 @@ jobs:
 
           Import-Module ExchangeOnlineManagement -RequiredVersion 3.9.0 -ErrorAction Stop
 
+          Write-Host 'Installed ExchangeOnlineManagement versions:'
           Get-Module ExchangeOnlineManagement -ListAvailable |
             Sort-Object Version -Descending |
             Select-Object Name, Version, Path -First 5 |
             Format-List
 
-          Get-InstalledModule PackageManagement -AllVersions | Select-Object Name, Version | Format-Table
-          Get-InstalledModule PowerShellGet -AllVersions | Select-Object Name, Version | Format-Table
+          Write-Host 'Installed Microsoft Graph module versions:'
+          Get-Module Microsoft.Graph.Authentication, Microsoft.Graph.Applications, Microsoft.Graph.Identity.DirectoryManagement -ListAvailable |
+            Sort-Object Name, Version -Descending |
+            Select-Object Name, Version, Path |
+            Format-Table -AutoSize
 
       - name: Diagnose app-only Exchange and IPPS authentication
         shell: pwsh
