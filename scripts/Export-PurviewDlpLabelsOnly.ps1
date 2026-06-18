@@ -18,9 +18,9 @@
     does not support app-only permissions. Instead, it connects to Security & Compliance
     PowerShell with Connect-IPPSSession and reads labels with Get-ComplianceTag.
 
-    This version writes the base64 PFX from GRC_CERTIFICATE to a temporary file and uses
-    Connect-IPPSSession -CertificateFilePath. This avoids Windows certificate store logic,
-    thumbprints, and invalid attempts to modify the read-only $IsWindows automatic variable.
+    This version supports a PFX certificate with an empty password ("").
+    For an empty certificate password, it creates an empty SecureString instead of calling
+    ConvertTo-SecureString -String "", because PowerShell rejects empty strings there.
 
 .PARAMETER OutputDirectory
     Directory where the JSON and CSV output files are written.
@@ -111,6 +111,10 @@ function ConvertTo-GrcSecureString {
         [AllowEmptyString()]
         [string] $PlainText = ''
     )
+
+    if ([string]::IsNullOrEmpty($PlainText)) {
+        return [System.Security.SecureString]::new()
+    }
 
     return ConvertTo-SecureString -String $PlainText -AsPlainText -Force
 }
