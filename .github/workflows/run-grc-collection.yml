@@ -114,10 +114,33 @@ jobs:
         cd ../../EntraID/Governance/powershell
         ./Get-EntraGovernanceSummary.ps1 -TenantId $env:GRC_TENANT_ID -ClientId $env:GRC_CLIENT_ID -CertificateBase64 $env:GRC_CERTIFICATE
 
-        # 11. Microsoft Purview
-        Write-Host "Running Purview Summary Collector..." -ForegroundColor Yellow
-        cd ../../../Purview/powershell
-        ./Get-PurviewSummary.ps1 -TenantId $env:GRC_TENANT_ID -ClientId $env:GRC_CLIENT_ID -CertificateBase64 $env:GRC_CERTIFICATE
+        # NOTE: Purview (DLP + Retention Labels) runs in a separate Windows job.
+        # See: .github/workflows/purview-collection.yml
+
+
+  # Purview runs on windows-latest (required for CSP-certificate + IPPS thumbprint auth)
+  collect-purview:
+    name: Collect Purview (Windows)
+    uses: ./.github/workflows/purview-collection.yml
+    secrets: inherit
+
+  # Report generation waits for both collection jobs
+  generate-report:
+    name: Generate HTML GRC Report
+    runs-on: ubuntu-latest
+    needs: [collect-assets, collect-purview]
+    if: always()
+    permissions:
+      contents: write
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Download all collection artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: exports/
+        merge-multiple: true
 
     - name: Generate HTML GRC Report
       shell: pwsh
