@@ -55,6 +55,17 @@ jobs:
             -CertificateBase64   $env:GRC_CERTIFICATE `
             -CertificatePassword $env:GRC_CERTIFICATE_PASSWORD
 
+      - name: Run Purview Sensitivity Labels Full Details Collector
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Host "Starting Purview Sensitivity Labels Full Details Collector..." -ForegroundColor Cyan
+          ./services/Purview/powershell/Get-PurviewSensitivityLabelsFullDetails.ps1 `
+            -TenantId            $env:GRC_TENANT_ID `
+            -ClientId            $env:GRC_CLIENT_ID `
+            -CertificateBase64   $env:GRC_CERTIFICATE `
+            -CertificatePassword $env:GRC_CERTIFICATE_PASSWORD
+
       - name: Commit and Push Purview exports
         shell: bash
         run: |

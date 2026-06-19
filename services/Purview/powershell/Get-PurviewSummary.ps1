@@ -269,7 +269,7 @@ function Connect-GrcComplianceSession {
         -AppId                $ClientId `
         -CertificateThumbprint $CertificateThumbprint `
         -Organization         $Organization `
-        -CommandName          Get-ComplianceTag, Get-DlpCompliancePolicy `
+        -CommandName          Get-ComplianceTag, Get-DlpCompliancePolicy, Get-Label `
         -ShowBanner:$false `
         -DisableWAM `
         -EnableErrorReporting `
@@ -384,16 +384,18 @@ try {
 
     # 5. Build report data structure
     $reportData = [Ordered]@{
-        TotalSensitivityLabels   = 0
-        SensitivityLabelNames    = ''
-        SensitivityLabelsDetails = @()
-        TotalDlpPolicies         = 0
-        DlpPolicyNames           = ''
-        DlpPoliciesDetails       = @()
-        TotalRetentionLabels     = 0
-        RetentionLabelsDetails   = @()
-        UserSensitivityLabels    = @()
-        LabelPolicySettings      = [Ordered]@{
+        TotalSensitivityLabels    = 0
+        SensitivityLabelNames     = ''
+        SensitivityLabelsDetails  = @()
+        TotalCopilotBlockedLabels = 0
+        CopilotBlockedLabelNames  = ''
+        TotalDlpPolicies          = 0
+        DlpPolicyNames            = ''
+        DlpPoliciesDetails        = @()
+        TotalRetentionLabels      = 0
+        RetentionLabelsDetails    = @()
+        UserSensitivityLabels     = @()
+        LabelPolicySettings       = [Ordered]@{
             IsMandatory                    = $false
             DefaultLabelId                 = ''
             DowngradeJustificationRequired = $false
@@ -424,18 +426,49 @@ try {
             }
             $reportData.SensitivityLabelNames = ($labelNames | Where-Object { $_ }) -join '; '
 
+            # Query detailed advanced settings via IPPS (Get-Label) if connected
+            $copilotSettings = @{}
+            $copilotBlockedNames = @()
+            if ($ippsConnected) {
+                try {
+                    $ippsLabels = @(Get-Label -IncludeDetailedLabelActions -SkipValidations -ErrorAction SilentlyContinue)
+                    foreach ($lbl in $ippsLabels) {
+                        $settingsDict = @{}
+                        if ($lbl.Settings) {
+                            foreach ($setting in $lbl.Settings) {
+                                if ($setting -match '^([^=]+)=(.*)$') {
+                                    $settingsDict[$Matches[1]] = $Matches[2]
+                                }
+                            }
+                        }
+                        $isBlocked = $settingsDict.ContainsKey('BlockContentAnalysisServices') -and $settingsDict['BlockContentAnalysisServices'] -ieq 'True'
+                        $copilotSettings[$lbl.Guid.ToString()] = $isBlocked
+                        if ($isBlocked) {
+                            $copilotBlockedNames += $lbl.DisplayName
+                        }
+                    }
+                    $reportData.TotalCopilotBlockedLabels = $copilotBlockedNames.Count
+                    $reportData.CopilotBlockedLabelNames = $copilotBlockedNames -join '; '
+                } catch {
+                    Write-Warning "Could not retrieve sensitivity label settings via IPPS: $_"
+                }
+            }
+
             $reportData.SensitivityLabelsDetails = $labelsResponse.value | ForEach-Object {
                 $item = $_
                 $displayName = Get-GrcSafeProperty -InputObject $item -Name 'displayName'
                 $name = Get-GrcSafeProperty -InputObject $item -Name 'name'
                 $labelName = if ($displayName) { $displayName } else { $name }
+                $labelId = Get-GrcSafeProperty -InputObject $item -Name 'id'
+                $blockCopilot = if ($labelId -and $copilotSettings.ContainsKey($labelId.ToString())) { $copilotSettings[$labelId.ToString()] } else { $false }
                 [Ordered]@{
-                    Id          = Get-GrcSafeProperty -InputObject $item -Name 'id'
+                    Id          = $labelId
                     Name        = $labelName
                     Description = Get-GrcSafeProperty -InputObject $item -Name 'description'
                     IsActive    = Get-GrcSafeProperty -InputObject $item -Name 'isActive'
                     Sensitivity = Get-GrcSafeProperty -InputObject $item -Name 'sensitivity'
                     Color       = Get-GrcSafeProperty -InputObject $item -Name 'color'
+                    BlockCopilot = $blockCopilot
                 }
             }
         }

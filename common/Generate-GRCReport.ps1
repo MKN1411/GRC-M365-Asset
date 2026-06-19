@@ -114,6 +114,8 @@ $arCount = if ($governance) { $governance.TotalAccessReviews } else { 0 }
 # Purview statistics
 $purviewLabels = if ($purview) { $purview.TotalSensitivityLabels } else { 0 }
 $purviewLabelsNames = if ($purview -and $purview.SensitivityLabelNames) { $purview.SensitivityLabelNames } else { "Keine" }
+$purviewCopilotBlocked = if ($purview -and $purview.TotalCopilotBlockedLabels) { $purview.TotalCopilotBlockedLabels } else { 0 }
+$purviewCopilotBlockedNames = if ($purview -and $purview.CopilotBlockedLabelNames) { $purview.CopilotBlockedLabelNames } else { "Keine" }
 $purviewDlp = if ($purview) { $purview.TotalDlpPolicies } else { 0 }
 $purviewDlpNames = if ($purview -and $purview.DlpPolicyNames) { $purview.DlpPolicyNames } else { "Keine" }
 $purviewRetention = if ($purview -and $purview.TotalRetentionLabels) { $purview.TotalRetentionLabels } else { 0 }
@@ -561,6 +563,14 @@ $htmlContent = @"
                 <div class="metric-row" style="flex-direction: column; gap: 0.25rem;">
                     <span class="metric-label">Labelnamen:</span>
                     <span class="metric-value" style="font-size: 0.85rem; color: var(--text-muted);">$purviewLabelsNames</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Copilot-Ausschluss aktiv (BlockContentAnalysisServices)</span>
+                    <span class="metric-value $(if ($purviewCopilotBlocked -gt 0) { 'warning' } else { '' })">$purviewCopilotBlocked Labels</span>
+                </div>
+                <div class="metric-row" style="flex-direction: column; gap: 0.25rem;">
+                    <span class="metric-label">Copilot-ausgeschlossene Labels:</span>
+                    <span class="metric-value" style="font-size: 0.85rem; color: var(--text-muted);">$purviewCopilotBlockedNames</span>
                 </div>
                 <div class="metric-row">
                     <span class="metric-label">DLP Richtlinien (Data Loss Prevention)</span>
