@@ -184,6 +184,156 @@ function Get-GrcHtmlTable {
     return $sb.ToString()
 }
 
+# Dedicated function to render Purview labels in a hierarchical parent/child tree
+function Get-GrcPurviewTable {
+    param(
+        $Data
+    )
+    if ($null -eq $Data -or @($Data).Count -eq 0) {
+        return "<p style='color: var(--text-muted); padding: 1rem;'>Keine Daten verfügbar.</p>"
+    }
+
+    # Step 1: Index labels by Id and Name
+    $labelsById = @{}
+    $labelsByName = @{}
+    foreach ($item in $Data) {
+        if ($item.Id) { $labelsById[$item.Id.ToLower()] = $item }
+        if ($item.DisplayName) { $labelsByName[$item.DisplayName.ToLower()] = $item }
+    }
+
+    # Step 2: Establish Parent-Child relationships
+    $parentToChildren = @{}
+    $rootLabels = [System.Collections.Generic.List[object]]::new()
+    $childToParent = @{}
+
+    foreach ($item in $Data) {
+        $id = $item.Id.ToLower()
+        $parentGuid = if ($item.ParentGuid) { $item.ParentGuid.ToLower() } else { "" }
+        $parentId = ""
+
+        # ParentGuid match
+        if ($parentGuid -and $labelsById.ContainsKey($parentGuid)) {
+            $parentId = $parentGuid
+        } else {
+            # Regex match for parenthetical sublabels, e.g. "Vertraulich (verschlüsselt) - 0010" -> parent "Vertraulich - 0010"
+            if ($item.DisplayName -match "^(.+?)\s*\((.+?)\)\s*(-\s*\d+)?$") {
+                $prefix = $Matches[1].Trim()
+                $suffix = if ($Matches[3]) { $Matches[3].Trim() } else { "" }
+                $parentName = if ($suffix) { "$prefix $suffix" } else { $prefix }
+                $parentName2 = if ($suffix) { "$prefix - $($suffix.Replace('-','').Trim())" } else { $prefix }
+
+                if ($labelsByName.ContainsKey($parentName.ToLower())) {
+                    $parentId = $labelsByName[$parentName.ToLower()].Id.ToLower()
+                } elseif ($labelsByName.ContainsKey($parentName2.ToLower())) {
+                    $parentId = $labelsByName[$parentName2.ToLower()].Id.ToLower()
+                }
+            }
+        }
+
+        if ($parentId) {
+            $childToParent[$id] = $parentId
+            if (-not $parentToChildren.ContainsKey($parentId)) {
+                $parentToChildren[$parentId] = [System.Collections.Generic.List[object]]::new()
+            }
+            $parentToChildren[$parentId].Add($item)
+        }
+    }
+
+    # Root labels
+    foreach ($item in $Data) {
+        $id = $item.Id.ToLower()
+        if (-not $childToParent.ContainsKey($id)) {
+            $rootLabels.Add($item)
+        }
+    }
+
+    # Sort roots by priority
+    $sortedRoots = $rootLabels | Sort-Object Priority
+
+    # Flatten the tree
+    $flatList = [System.Collections.Generic.List[object]]::new()
+    $traverse = {
+        param($node, $level)
+        $nodeWrapper = [ordered]@{
+            Node = $node
+            IndentLevel = $level
+        }
+        $flatList.Add($nodeWrapper)
+        $id = $node.Id.ToLower()
+        if ($parentToChildren.ContainsKey($id)) {
+            $sortedChildren = $parentToChildren[$id] | Sort-Object Priority
+            foreach ($child in $sortedChildren) {
+                & $traverse $child ($level + 1)
+            }
+        }
+    }
+
+    foreach ($root in $sortedRoots) {
+        & $traverse $root 0
+    }
+
+    # Generate HTML
+    $sb = [System.Text.StringBuilder]::new()
+    $null = $sb.Append("<div class='table-wrapper'><table class='data-table'><thead><tr>")
+    $headers = @("Labelname", "Copilot Sperre", "Scope Files", "Scope Emails", "Scope Sites", "Verschlüsselt", "Richtlinien")
+    foreach ($h in $headers) {
+        $null = $sb.Append("<th>$h</th>")
+    }
+    $null = $sb.Append("</tr></thead><tbody>")
+
+    $properties = @("BlockCopilot", "ScopeFiles", "ScopeEmails", "ScopeSites", "EncryptionEnabled", "PublishedPolicies")
+
+    foreach ($rowWrapper in $flatList) {
+        $row = $rowWrapper.Node
+        $level = $rowWrapper.IndentLevel
+
+        $rowStyle = ""
+        if ($level -eq 0) {
+            $rowStyle = "style='background-color: rgba(255,255,255,0.02); font-weight: 600; color: #ffffff;'"
+        } else {
+            $rowStyle = "style='color: var(--text-muted);'"
+        }
+
+        $null = $sb.Append("<tr $rowStyle>")
+
+        # Name column with indentation and arrow
+        $nameStr = $row.DisplayName.ToString().Replace('&','&amp;').Replace('<','&lt;').Replace('>','&gt;')
+        if ($level -gt 0) {
+            $indentPx = $level * 20
+            $nameStr = "<span style='padding-left: $($indentPx)px; color: var(--accent-secondary); font-size: 0.95em;'>↳ $nameStr</span>"
+        }
+
+        $null = $sb.Append("<td>$nameStr</td>")
+
+        # Other columns
+        foreach ($p in $properties) {
+            $val = $row.$p
+            $valStr = ""
+            if ($null -eq $val) {
+                $valStr = "-"
+            } elseif ($val -is [bool] -or $val -eq "True" -or $val -eq "False") {
+                $boolVal = ($val -eq $true -or $val -eq "True")
+                $valStr = if ($boolVal) { "<span class='badge success'>Ja</span>" } else { "<span class='badge danger'>Nein</span>" }
+            } elseif ($val -is [array] -or $val -is [System.Collections.IEnumerable] -and $val -isnot [string]) {
+                $cleanItems = @()
+                foreach ($item in $val) {
+                    if ($item) {
+                        $cleanItems += $item.ToString().Replace('&','&amp;').Replace('<','&lt;').Replace('>','&gt;')
+                    }
+                }
+                $valStr = $cleanItems -join '; '
+            } else {
+                $valStr = $val.ToString().Replace('&','&amp;').Replace('<','&lt;').Replace('>','&gt;')
+            }
+            $null = $sb.Append("<td>$valStr</td>")
+        }
+        $null = $sb.Append("</tr>")
+    }
+
+    $null = $sb.Append("</tbody></table></div>")
+    return $sb.ToString()
+}
+
 # Pre-generate detailed tables for HTML interpolation
 $usersTableHtml      = Get-GrcHtmlTable -Data $usersFull -Properties @("DisplayName", "UserPrincipalName", "AccountEnabled", "IsMfaRegistered", "DirectoryRoles", "ManagerName") -Headers @("Name", "UPN", "Aktiv", "MFA", "Admin-Rollen", "Vorgesetzter")
 $groupsTableHtml     = Get-GrcHtmlTable -Data $groupsFull -Properties @("DisplayName", "GroupClassification", "Visibility", "Owners", "MemberCount") -Headers @("Gruppenname", "Klassifizierung", "Sichtbarkeit", "Besitzer", "Mitglieder")
@@ -191,7 +341,7 @@ $devicesTableHtml    = Get-GrcHtmlTable -Data $devicesFull -Properties @("Displa
 $exchangeTableHtml   = Get-GrcHtmlTable -Data $exchangeFull -Properties @("MailboxAddress", "MailboxType", "ProhibitSendQuota", "FullAccessPermissions", "SendAsPermissions", "ForwardingAddress") -Headers @("Postfach-Adresse", "Typ", "Quota Limit", "Vollzugriff (Delegiert)", "Send As (Delegiert)", "Weiterleitung")
 $sharepointTableHtml = Get-GrcHtmlTable -Data $sharepointFull -Properties @("DisplayName", "WebUrl", "SiteOwners", "StorageUsedBytes") -Headers @("Website-Name", "URL", "Administratoren", "Speicher (Bytes)")
 $teamsTableHtml      = Get-GrcHtmlTable -Data $teamsFull -Properties @("DisplayName", "Visibility", "Owners", "MemberCount", "GuestCount", "Channels") -Headers @("Teamname", "Typ", "Besitzer", "Mitglieder", "Gäste", "Kanäle")
-$purviewTableHtml    = Get-GrcHtmlTable -Data $purviewFull -Properties @("DisplayName", "BlockCopilot", "ScopeFiles", "ScopeEmails", "ScopeSites", "EncryptionEnabled", "PublishedPolicies") -Headers @("Labelname", "Copilot Sperre", "Scope Files", "Scope Emails", "Scope Sites", "Verschlüsselt", "Richtlinien")
+$purviewTableHtml    = Get-GrcPurviewTable -Data $purviewFull
 
 # 4. Generate HTML Content (Highly styled with Outfit typography, glassmorphism, responsive grid)
 $htmlContent = @"
