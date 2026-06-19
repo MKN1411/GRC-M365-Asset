@@ -118,7 +118,12 @@ $app = Get-MgApplication -Filter "displayName eq '$appDisplayName'" -ErrorAction
 
 if (!$app -and $CreateNew) {
     Write-Host "Generating self-signed certificate..." -ForegroundColor Cyan
-    $cert = New-SelfSignedCertificate -Subject "CN=$appDisplayName" -CertStoreLocation "Cert:\CurrentUser\My" -KeyExportPolicy Exportable -KeySpec Signature
+    $cert = New-SelfSignedCertificate `
+        -Subject "CN=$appDisplayName" `
+        -CertStoreLocation "Cert:\CurrentUser\My" `
+        -KeyExportPolicy Exportable `
+        -KeySpec KeyExchange `
+        -Provider "Microsoft Enhanced RSA and AES Cryptographic Provider"
     $CertificateThumbprint = $cert.Thumbprint
     
     # Export certificate data (with empty password to ensure private key is included)
