@@ -22,7 +22,7 @@ function Get-LatestJsonData {
         if ($files.Count -gt 0) {
             $latest = $files[0].FullName
             Write-Host "Found latest export: $($files[0].Name)" -ForegroundColor DarkGray
-            return Get-Content -Raw -Path $latest | ConvertFrom-Json
+            return Get-Content -Raw -Path $latest | ConvertFrom-Json -AsHashTable
         }
     }
     Write-Host "No export found under $Path" -ForegroundColor DarkYellow
@@ -142,7 +142,7 @@ if ($purview -and $purview.LabelPolicySettings) {
 # Helper function to generate premium HTML tables from data objects
 function Get-GrcHtmlTable {
     param(
-        [PSCustomObject[]]$Data,
+        $Data,
         [string[]]$Properties,
         [string[]]$Headers
     )
