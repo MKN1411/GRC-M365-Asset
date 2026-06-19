@@ -556,7 +556,7 @@ try {
             TemplateId                   = $templateId
             RightsDefinitions            = $flatRightsStr
             LocaleSettings               = $flatLocalesStr
-            LabelActions                 = ($parsedActions | ForEach-Object { if ($_.SubType) { "$($_.Type)_$($_.SubType)" } else { $_.Type } } -join '; ')
+            LabelActions                 = (($parsedActions | ForEach-Object { if ($_.SubType) { "$($_.Type)_$($_.SubType)" } else { $_.Type } }) -join '; ')
             IsScopedToUser               = $isScopedToUser
             PublishedPolicies            = ($scopedPolicies -join '; ')
             PublishedToUsers             = ($publishedToUsers -join '; ')
