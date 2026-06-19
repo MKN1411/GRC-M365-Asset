@@ -1403,7 +1403,7 @@ $htmlContent = @"
           }
         }
 
-        function switchLanguage(lang) {
+        function applyLanguage(lang) {
           document.documentElement.lang = lang;
           
           // Translate direct data-i18n tags
@@ -1460,7 +1460,11 @@ $htmlContent = @"
           });
 
           updateCharts(lang);
+        }
+
+        function switchLanguage(lang) {
           localStorage.setItem("grc_lang", lang);
+          window.location.reload();
         }
 
         // Initialize Charts
@@ -1512,7 +1516,7 @@ $htmlContent = @"
         document.addEventListener("DOMContentLoaded", () => {
           const savedLang = localStorage.getItem("grc_lang") || "de";
           document.getElementById("languageSelect").value = savedLang;
-          switchLanguage(savedLang);
+          applyLanguage(savedLang);
         });
     </script>
 </body>

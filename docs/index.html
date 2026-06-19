@@ -392,7 +392,7 @@
                     </select>
                 </div>
                 <div class="timestamp-badge">
-                    📅 <span data-i18n="lbl_generated_at">Generiert am</span>: 19.06.2026 20:34
+                    📅 <span data-i18n="lbl_generated_at">Generiert am</span>: 19.06.2026 20:52
                 </div>
             </div>
         </header>
@@ -939,7 +939,7 @@
           }
         }
 
-        function switchLanguage(lang) {
+        function applyLanguage(lang) {
           document.documentElement.lang = lang;
           
           // Translate direct data-i18n tags
@@ -996,7 +996,11 @@
           });
 
           updateCharts(lang);
+        }
+
+        function switchLanguage(lang) {
           localStorage.setItem("grc_lang", lang);
+          window.location.reload();
         }
 
         // Initialize Charts
@@ -1048,7 +1052,7 @@
         document.addEventListener("DOMContentLoaded", () => {
           const savedLang = localStorage.getItem("grc_lang") || "de";
           document.getElementById("languageSelect").value = savedLang;
-          switchLanguage(savedLang);
+          applyLanguage(savedLang);
         });
     </script>
 </body>
