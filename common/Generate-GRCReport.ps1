@@ -377,8 +377,8 @@ function Get-GrcSecureScoreSectionHtml {
                     </svg>
                 </div>
                 <div style="flex: 1; min-width: 200px;">
-                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; color: #ffffff;">Secure Score Status</h3>
-                    <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.4;">
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; color: #ffffff;" data-i18n="sec_score_status">Secure Score Status</h3>
+                    <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.4;" data-i18n-score-text="$pct|$curr|$max">
                         Ihr aktueller Sicherheitsindex liegt bei <strong style="color: #ffffff;">$pct%</strong>. 
                         Das entspricht <strong style="color: #ffffff;">$curr von $max</strong> möglichen Punkten.
                     </p>
@@ -391,15 +391,15 @@ function Get-GrcSecureScoreSectionHtml {
                     <div class="id-donut-item">
                         <span style="font-size: 1.25rem;">📊</span>
                         <div class="id-donut-info">
-                            <div class="id-donut-title">M365 globaler Durchschnitt</div>
+                            <div class="id-donut-title" data-i18n="global_average">M365 globaler Durchschnitt</div>
                             <div class="id-donut-detail">$avg Pkt. ($([Math]::Round(($avg / $max) * 100, 2))% von max. $max Pkt.)</div>
                         </div>
                     </div>
                     <div class="id-donut-item">
                         <span style="font-size: 1.25rem;">⚖️</span>
                         <div class="id-donut-info">
-                            <div class="id-donut-title">Abweichung zum Durchschnitt</div>
-                            <div class="id-donut-detail $diffClass" style="font-weight: 600;">$diffText</div>
+                            <div class="id-donut-title" data-i18n="deviation_average">Abweichung zum Durchschnitt</div>
+                            <div class="id-donut-detail $diffClass" style="font-weight: 600;" data-i18n-diff="$diff">$diffText</div>
                         </div>
                     </div>
                 </div>
@@ -848,6 +848,32 @@ $htmlContent = @"
         .danger-text { color: var(--danger) !important; }
         .warning-text { color: var(--warning) !important; }
 
+        /* Language Selector styling */
+        .lang-selector {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            padding: 0.35rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--text-color);
+        }
+        .lang-selector select {
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+            font-family: inherit;
+        }
+        .lang-selector select option {
+            background: #0b0f19;
+            color: #ffffff;
+        }
+
         @media(max-width: 600px) {
             body { padding: 1rem; }
             .grid-2 { grid-template-columns: 1fr; }
@@ -858,11 +884,19 @@ $htmlContent = @"
     <div class="container">
         <header>
             <div class="header-title">
-                <h1>M365 GRC Asset Audit Report</h1>
-                <p>Mandant: <strong>$tenantName</strong> ($tenantIdVal)</p>
+                <h1 data-i18n="report_title">M365 GRC Asset Audit Report</h1>
+                <p><span data-i18n="lbl_tenant">Mandant</span>: <strong>$tenantName</strong> ($tenantIdVal)</p>
             </div>
-            <div class="timestamp-badge">
-                📅 Generiert am: $(Get-Date -Format "dd.MM.yyyy HH:mm")
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div class="lang-selector">
+                    🌐 <select id="languageSelect" onchange="switchLanguage(this.value)">
+                        <option value="de" selected>Deutsch</option>
+                        <option value="en">English</option>
+                    </select>
+                </div>
+                <div class="timestamp-badge">
+                    📅 <span data-i18n="lbl_generated_at">Generiert am</span>: $(Get-Date -Format "dd.MM.yyyy HH:mm")
+                </div>
             </div>
         </header>
 
@@ -870,57 +904,57 @@ $htmlContent = @"
         <div class="stats-summary">
             <div class="stat-box">
                 <div class="num">$totalUsers</div>
-                <div class="lbl">Benutzer gesamt</div>
+                <div class="lbl" data-i18n="stat_users_total">Benutzer gesamt</div>
             </div>
             <div class="stat-box">
                 <div class="num">$activeUsers</div>
-                <div class="lbl">Aktive Konten</div>
+                <div class="lbl" data-i18n="stat_active_accounts">Aktive Konten</div>
             </div>
             <div class="stat-box">
                 <div class="num">$totalGroups</div>
-                <div class="lbl">Gruppen gesamt</div>
+                <div class="lbl" data-i18n="stat_groups_total">Gruppen gesamt</div>
             </div>
             <div class="stat-box">
                 <div class="num">$totalEntraDevices</div>
-                <div class="lbl">Entra ID Devices</div>
+                <div class="lbl" data-i18n="stat_entra_devices">Entra ID Devices</div>
             </div>
             <div class="stat-box">
                 <div class="num">$totalIntuneDevices</div>
-                <div class="lbl">Intune Managed</div>
+                <div class="lbl" data-i18n="stat_intune_managed">Intune Managed</div>
             </div>
             <div class="stat-box">
                 <div class="num">$totalDefenderDevices</div>
-                <div class="lbl">Defender Endpoints</div>
+                <div class="lbl" data-i18n="stat_defender_endpoints">Defender Endpoints</div>
             </div>
         </div>
 
         <div class="grid-3">
             <!-- Tenant Metadata Card -->
             <div class="card">
-                <h2>🏢 Mandanten-Details</h2>
+                <h2 data-i18n="card_tenant_details">🏢 Mandanten-Details</h2>
                 <div class="metric-row">
-                    <span class="metric-label">Name</span>
+                    <span class="metric-label" data-i18n="lbl_name">Name</span>
                     <span class="metric-value">$tenantName</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">Tenant ID</span>
+                    <span class="metric-label" data-i18n="lbl_tenant_id">Tenant ID</span>
                     <span class="metric-value" style="font-size: 0.8rem; font-family: monospace;">$tenantIdVal</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">Identity Security Defaults</span>
+                    <span class="metric-label" data-i18n="lbl_security_defaults">Identity Security Defaults</span>
                     <span class="metric-value $(if ($securityDefaults -eq $true) { 'success' } else { 'danger' })">
-                        $(if ($securityDefaults -eq $true) { 'Aktiviert' } elseif ($securityDefaults -eq $false) { 'Deaktiviert' } else { 'N/A' })
+                        $(if ($securityDefaults -eq $true) { '<span data-i18n="lbl_security_defaults_active">Aktiviert</span>' } elseif ($securityDefaults -eq $false) { '<span data-i18n="lbl_security_defaults_inactive">Deaktiviert</span>' } else { 'N/A' })
                     </span>
                 </div>
                 <div class="metric-row" style="flex-direction: column; gap: 0.25rem;">
-                    <span class="metric-label">Verifizierte Domains:</span>
+                    <span class="metric-label" data-i18n="lbl_verified_domains">Verifizierte Domains:</span>
                     <span class="metric-value" style="font-size: 0.8rem; color: var(--text-muted); word-break: break-all; margin-top: 0.25rem;">$verifiedDomains</span>
                 </div>
             </div>
 
             <!-- Identity GRC Card -->
             <div class="card">
-                <h2>MFA Absicherung</h2>
+                <h2 data-i18n="card_mfa_sec">MFA Absicherung</h2>
                 <div class="chart-wrapper">
                     <canvas id="mfaChart"></canvas>
                 </div>
@@ -928,35 +962,35 @@ $htmlContent = @"
 
             <!-- Groups Audit Card -->
             <div class="card">
-                <h2>👥 Gruppen-Struktur</h2>
+                <h2 data-i18n="card_groups_struct">👥 Gruppen-Struktur</h2>
                 <div class="metric-row">
-                    <span class="metric-label">M365 / Unified Groups</span>
+                    <span class="metric-label" data-i18n="lbl_m365_groups">M365 / Unified Groups</span>
                     <span class="metric-value">$m365Groups</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">Sicherheitsgruppen</span>
+                    <span class="metric-label" data-i18n="lbl_sec_groups">Sicherheitsgruppen</span>
                     <span class="metric-value">$securityGroups</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">Gruppen gesamt</span>
+                    <span class="metric-label" data-i18n="lbl_total_groups">Gruppen gesamt</span>
                     <span class="metric-value">$totalGroups</span>
                 </div>
             </div>
         </div>
 
         <details class="collector-detail">
-            <summary>👤 Benutzer-Details (Entra ID Users)</summary>
+            <summary data-i18n="sum_users_details">👤 Benutzer-Details (Entra ID Users)</summary>
             $usersTableHtml
         </details>
         <details class="collector-detail">
-            <summary>👥 Gruppen-Details (Entra ID Groups)</summary>
+            <summary data-i18n="sum_groups_details">👥 Gruppen-Details (Entra ID Groups)</summary>
             $groupsTableHtml
         </details>
 
         <div class="grid-2">
             <!-- User Status Breakdown Card -->
             <div class="card">
-                <h2>👤 Benutzerkonten-Status</h2>
+                <h2 data-i18n="lbl_user_status">👤 Benutzerkonten-Status</h2>
                 <div class="chart-wrapper">
                     <canvas id="userStatusChart"></canvas>
                 </div>
@@ -964,21 +998,21 @@ $htmlContent = @"
 
             <!-- Device GRC Overlap Card -->
             <div class="card">
-                <h2>💻 Endgeräte GRC-Audit</h2>
+                <h2 data-i18n="lbl_hardware_audit">💻 Endgeräte GRC-Audit</h2>
                 <div class="metric-row">
-                    <span class="metric-label">In Entra ID registriert/joined (Hardware Asset)</span>
+                    <span class="metric-label" data-i18n="lbl_registered_joined">In Entra ID registriert/joined (Hardware Asset)</span>
                     <span class="metric-value">$totalEntraDevices</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">In Intune verwaltet (Compliance erzwingbar)</span>
+                    <span class="metric-label" data-i18n="lbl_managed_intune">In Intune verwaltet (Compliance erzwingbar)</span>
                     <span class="metric-value" style="color: var(--accent-secondary);">$totalIntuneDevices</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">In Defender for Endpoint erfasst (EDR Abdeckung)</span>
+                    <span class="metric-label" data-i18n="lbl_enrolled_defender">In Defender for Endpoint erfasst (EDR Abdeckung)</span>
                     <span class="metric-value" style="color: var(--success);">$totalDefenderDevices</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">Intune-Abdeckung (relativ to Entra ID)</span>
+                    <span class="metric-label" data-i18n="lbl_intune_coverage">Intune-Abdeckung (relativ to Entra ID)</span>
                     <span class="metric-value">
                         $(if ($totalEntraDevices -gt 0) { "{0:P1}" -f ($totalIntuneDevices / $totalEntraDevices) } else { "0%" })
                     </span>
@@ -987,178 +1021,437 @@ $htmlContent = @"
         </div>
 
         <details class="collector-detail">
-            <summary>💻 Geräte-Details (Hardware & Compliance)</summary>
+            <summary data-i18n="sum_devices_details">💻 Geräte-Details (Hardware & Compliance)</summary>
             $devicesTableHtml
         </details>
 
         <!-- Microsoft Secure Score & Recommendations -->
-        <h2 style="margin-top: 2.5rem; margin-bottom: 1rem; font-size: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; color: #ffffff;">🎯 Microsoft Secure Score & Handlungsempfehlungen</h2>
+        <h2 style="margin-top: 2.5rem; margin-bottom: 1rem; font-size: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; color: #ffffff;"><span data-i18n="lbl_sec_score_recommendations">🎯 Microsoft Secure Score & Handlungsempfehlungen</span></h2>
         $secureScoreHtml
 
         <!-- M365 Collaboration & Mail GRC Row -->
-        <h2 style="margin-top: 2.5rem; margin-bottom: 1rem; font-size: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; color: #ffffff;">📬 Kollaboration & E-Mail GRC-Audit</h2>
+        <h2 style="margin-top: 2.5rem; margin-bottom: 1rem; font-size: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; color: #ffffff;"><span data-i18n="lbl_collab_mail_audit">📬 Kollaboration & E-Mail GRC-Audit</span></h2>
         <div class="grid-3">
             <!-- Exchange Online Card -->
             <div class="card">
-                <h2>✉️ Exchange Online</h2>
+                <h2 data-i18n="sum_exchange_details">✉️ Exchange Online</h2>
                 <div class="metric-row">
-                    <span class="metric-label">Benutzer-Postfächer</span>
+                    <span class="metric-label" data-i18n="lbl_user_mailboxes">Benutzer-Postfächer</span>
                     <span class="metric-value">$exchUserMailboxes</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">Gemeinsame Postfächer (Shared)</span>
+                    <span class="metric-label" data-i18n="lbl_shared_mailboxes">Gemeinsame Postfächer (Shared)</span>
                     <span class="metric-value">$exchSharedMailboxes</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">Mailflow Transport-Regeln</span>
+                    <span class="metric-label" data-i18n="lbl_transport_rules">Mailflow Transport-Regeln</span>
                     <span class="metric-value warning">$exchTransportRules</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">DKIM-geschützte Domains</span>
+                    <span class="metric-label" data-i18n="lbl_dkim_domains">DKIM-geschützte Domains</span>
                     <span class="metric-value success">$exchDkimDomains</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">Anti-Malware Richtlinien</span>
+                    <span class="metric-label" data-i18n="lbl_antimalware_policies">Anti-Malware Richtlinien</span>
                     <span class="metric-value">$exchAntiMalware</span>
                 </div>
             </div>
 
             <!-- SharePoint & OneDrive Card -->
             <div class="card">
-                <h2>🌐 SharePoint & OneDrive</h2>
+                <h2 data-i18n="sum_sharepoint_details">🌐 SharePoint & OneDrive</h2>
                 <div class="metric-row">
-                    <span class="metric-label">Aktive SharePoint-Sites</span>
+                    <span class="metric-label" data-i18n="lbl_sp_sites">Aktive SharePoint-Sites</span>
                     <span class="metric-value">$spSites</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">Externer Freigabe-Modus</span>
+                    <span class="metric-label" data-i18n="lbl_sharing_policy">Externer Freigabe-Modus</span>
                     <span class="metric-value" style="font-size: 0.85rem; font-family: monospace;">$spSharingMode</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">Freigabe-Berechtigung</span>
+                    <span class="metric-label" data-i18n="lbl_sharing_capabilities">Freigabe-Berechtigung</span>
                     <span class="metric-value" style="font-size: 0.85rem; font-family: monospace;">$spSharingCap</span>
                 </div>
             </div>
 
             <!-- Microsoft Teams Card -->
             <div class="card">
-                <h2>💬 Microsoft Teams</h2>
+                <h2 data-i18n="sum_teams_details">💬 Microsoft Teams</h2>
                 <div class="metric-row">
-                    <span class="metric-label">Teams gesamt</span>
+                    <span class="metric-label" data-i18n="lbl_teams_total">Teams gesamt</span>
                     <span class="metric-value">$teamsCount</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">Öffentliche Teams (Risiko)</span>
+                    <span class="metric-label" data-i18n="lbl_public_teams">Öffentliche Teams (Risiko)</span>
                     <span class="metric-value $(if ($teamsPublic -gt 0) { 'warning' } else { '' })">$teamsPublic</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">Private Teams</span>
+                    <span class="metric-label" data-i18n="lbl_private_teams">Private Teams</span>
                     <span class="metric-value success">$teamsPrivate</span>
                 </div>
             </div>
         </div>
 
         <details class="collector-detail">
-            <summary>✉️ Exchange Online Postfach-Details</summary>
+            <summary data-i18n="sum_exchange_table">✉️ Exchange Online Postfach-Details</summary>
             $exchangeTableHtml
         </details>
         <details class="collector-detail">
-            <summary>🌐 SharePoint Online Website-Details</summary>
+            <summary data-i18n="sum_sharepoint_table">🌐 SharePoint Online Website-Details</summary>
             $sharepointTableHtml
         </details>
         <details class="collector-detail">
-            <summary>💬 Microsoft Teams-Details</summary>
+            <summary data-i18n="sum_teams_table">👥 Teams-Details (Kanallisten & Gäste)</summary>
             $teamsTableHtml
         </details>
 
         <!-- M365 Governance & Purview GRC Row -->
-        <h2 style="margin-top: 2.5rem; margin-bottom: 1rem; font-size: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; color: #ffffff;">🛡️ Identity Governance & Compliance GRC-Audit</h2>
+        <h2 style="margin-top: 2.5rem; margin-bottom: 1rem; font-size: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; color: #ffffff;"><span data-i18n="lbl_governance_compliance_audit">🛡️ Identity Governance & Compliance GRC-Audit</span></h2>
         <div class="grid-2">
             <!-- Entra ID Governance Card -->
             <div class="card">
-                <h2>🔑 Identity Governance (Entra ID)</h2>
+                <h2 data-i18n="lbl_entra_governance">🔑 Identity Governance (Entra ID)</h2>
                 <div class="metric-row">
-                    <span class="metric-label">Bedingter Zugriff (CA-Richtlinien)</span>
-                    <span class="metric-value">$caCount Richtlinien</span>
+                    <span class="metric-label" data-i18n="lbl_ca_policies">Bedingter Zugriff (CA-Richtlinien)</span>
+                    <span class="metric-value">$caCount <span data-i18n="lbl_policies">Richtlinien</span></span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">CA Richtlinien Aktiviert</span>
+                    <span class="metric-label" data-i18n="lbl_ca_enabled">CA Richtlinien Aktiviert</span>
                     <span class="metric-value success">$caEnabled</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">CA Richtlinien im Report-only Modus</span>
+                    <span class="metric-label" data-i18n="lbl_ca_report_only">CA Richtlinien im Report-only Modus</span>
                     <span class="metric-value warning">$caReportOnly</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">Zugriffspakete (Access Packages)</span>
+                    <span class="metric-label" data-i18n="lbl_access_packages">Zugriffspakete (Access Packages)</span>
                     <span class="metric-value">$apCount</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">Zugriffsüberprüfungen (Access Reviews)</span>
+                    <span class="metric-label" data-i18n="lbl_access_reviews">Zugriffsüberprüfungen (Access Reviews)</span>
                     <span class="metric-value">$arCount</span>
                 </div>
             </div>
 
             <!-- Purview Information Protection Card -->
             <div class="card">
-                <h2>🔒 Microsoft Purview Compliance & Information Protection</h2>
+                <h2 data-i18n="lbl_purview_compliance">🔒 Microsoft Purview Compliance & Information Protection</h2>
                 <div class="metric-row">
-                    <span class="metric-label">Vertraulichkeitslabels (Sensitivity Labels)</span>
+                    <span class="metric-label" data-i18n="lbl_sensitivity_labels">Vertraulichkeitslabels (Sensitivity Labels)</span>
                     <span class="metric-value">$purviewLabels</span>
                 </div>
                 <div class="metric-row" style="flex-direction: column; gap: 0.25rem;">
-                    <span class="metric-label">Labelnamen:</span>
+                    <span class="metric-label" data-i18n="lbl_label_names">Labelnamen:</span>
                     <span class="metric-value" style="font-size: 0.85rem; color: var(--text-muted);">$purviewLabelsNames</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">Copilot-Ausschluss aktiv (BlockContentAnalysisServices)</span>
-                    <span class="metric-value $(if ($purviewCopilotBlocked -gt 0) { 'warning' } else { '' })">$purviewCopilotBlocked Labels</span>
+                    <span class="metric-label" data-i18n="lbl_copilot_exclusion">Copilot-Ausschluss aktiv (BlockContentAnalysisServices)</span>
+                    <span class="metric-value $(if ($purviewCopilotBlocked -gt 0) { 'warning' } else { '' })">$purviewCopilotBlocked <span data-i18n="lbl_labels">Labels</span></span>
                 </div>
                 <div class="metric-row" style="flex-direction: column; gap: 0.25rem;">
-                    <span class="metric-label">Copilot-ausgeschlossene Labels:</span>
+                    <span class="metric-label" data-i18n="lbl_copilot_blocked_labels">Copilot-ausgeschlossene Labels:</span>
                     <span class="metric-value" style="font-size: 0.85rem; color: var(--text-muted);">$purviewCopilotBlockedNames</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">DLP Richtlinien (Data Loss Prevention)</span>
+                    <span class="metric-label" data-i18n="lbl_dlp_policies_count">DLP Richtlinien (Data Loss Prevention)</span>
                     <span class="metric-value">$purviewDlp</span>
                 </div>
                 <div class="metric-row" style="flex-direction: column; gap: 0.25rem;">
-                    <span class="metric-label">DLP Richtliniennamen:</span>
+                    <span class="metric-label" data-i18n="lbl_dlp_policy_names">DLP Richtliniennamen:</span>
                     <span class="metric-value" style="font-size: 0.85rem; color: var(--text-muted);">$purviewDlpNames</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">Aufbewahrungsbezeichnungen (Retention Labels)</span>
+                    <span class="metric-label" data-i18n="lbl_retention_labels_count">Aufbewahrungsbezeichnungen (Retention Labels)</span>
                     <span class="metric-value">$purviewRetention</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">Labeling Pflicht (Mandatory)</span>
-                    <span class="metric-value $(if ($mandatoryLabeling -eq 'Ja') { 'success' } else { '' })">$mandatoryLabeling</span>
+                    <span class="metric-label" data-i18n="lbl_mandatory_labeling_status">Labeling Pflicht (Mandatory)</span>
+                    <span class="metric-value $(if ($mandatoryLabeling -eq 'Ja') { 'success' } else { '' })">
+                        $(if ($mandatoryLabeling -eq 'Ja') { '<span data-i18n="lbl_yes">Ja</span>' } else { '<span data-i18n="lbl_no">Nein</span>' })
+                    </span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">Standard-Label</span>
+                    <span class="metric-label" data-i18n="lbl_default_label_status">Standard-Label</span>
                     <span class="metric-value" style="font-size: 0.85rem; font-family: monospace;">$defaultLabel</span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">Begründungspflicht bei Herabstufung</span>
-                    <span class="metric-value $(if ($justificationReq -eq 'Ja') { 'success' } else { '' })">$justificationReq</span>
+                    <span class="metric-label" data-i18n="lbl_downgrade_justification_status">Begründungspflicht bei Herabstufung</span>
+                    <span class="metric-value $(if ($justificationReq -eq 'Ja') { 'success' } else { '' })">
+                        $(if ($justificationReq -eq 'Ja') { '<span data-i18n="lbl_yes">Ja</span>' } else { '<span data-i18n="lbl_no">Nein</span>' })
+                    </span>
                 </div>
             </div>
         </div>
 
         <details class="collector-detail">
-            <summary>🔒 Purview Vertraulichkeitslabels-Details</summary>
+            <summary data-i18n="sum_purview_table">🔒 Purview Vertraulichkeitslabels-Details</summary>
             $purviewTableHtml
         </details>
 
-        <footer>
+        <footer data-i18n="footer_text">
             M365 GRC Assistant Onboarding Portal · Erstellt von Michael Kirst-Neshva
         </footer>
     </div>
 
-    <!-- Chart Configuration Script -->
+    <!-- Internationalization and Charts Script -->
     <script>
-        // MFA Chart
-        new Chart(document.getElementById('mfaChart'), {
+        const GrcTranslations = {
+          de: {
+            "report_title": "M365 GRC Asset Audit Report",
+            "lbl_tenant": "Mandant",
+            "lbl_generated_at": "Generiert am",
+            "stat_users_total": "Benutzer gesamt",
+            "stat_active_accounts": "Aktive Konten",
+            "stat_groups_total": "Gruppen gesamt",
+            "stat_entra_devices": "Entra ID Devices",
+            "stat_intune_managed": "Intune Managed",
+            "stat_defender_endpoints": "Defender Endpoints",
+            "card_tenant_details": "Mandanten-Details",
+            "lbl_name": "Name",
+            "lbl_tenant_id": "Tenant ID",
+            "lbl_security_defaults": "Identity Security Defaults",
+            "lbl_security_defaults_active": "Aktiviert",
+            "lbl_security_defaults_inactive": "Deaktiviert",
+            "lbl_verified_domains": "Verifizierte Domains:",
+            "card_mfa_sec": "MFA Absicherung",
+            "card_groups_struct": "Gruppen-Struktur",
+            "lbl_m365_groups": "M365 / Unified Groups",
+            "lbl_sec_groups": "Sicherheitsgruppen",
+            "lbl_total_groups": "Gruppen gesamt",
+            "sum_users_details": "👤 Benutzer-Details (Entra ID Users)",
+            "sum_groups_details": "👥 Gruppen-Details (Entra ID Groups)",
+            "lbl_user_status": "👤 Benutzerkonten-Status",
+            "lbl_hardware_audit": "💻 Endgeräte GRC-Audit",
+            "lbl_registered_joined": "In Entra ID registriert/joined (Hardware Asset)",
+            "lbl_managed_intune": "In Intune verwaltet (Compliance erzwingbar)",
+            "lbl_enrolled_defender": "In Defender for Endpoint erfasst (EDR Abdeckung)",
+            "lbl_intune_coverage": "Intune-Abdeckung (relativ to Entra ID)",
+            "sum_devices_details": "💻 Geräte-Details (Hardware & Compliance)",
+            "lbl_sec_score_recommendations": "🎯 Microsoft Secure Score & Handlungsempfehlungen",
+            "lbl_collab_mail_audit": "📬 Kollaboration & E-Mail GRC-Audit",
+            "sum_exchange_details": "✉️ Exchange Online",
+            "lbl_user_mailboxes": "Benutzer-Postfächer",
+            "lbl_shared_mailboxes": "Gemeinsame Postfächer (Shared)",
+            "lbl_transport_rules": "Mailflow Transport-Regeln",
+            "lbl_dkim_domains": "DKIM-geschützte Domains",
+            "lbl_antimalware_policies": "Anti-Malware Richtlinien",
+            "sum_sharepoint_details": "🌐 SharePoint & OneDrive",
+            "lbl_sp_sites": "Aktive SharePoint-Sites",
+            "lbl_sharing_policy": "Externer Freigabe-Modus",
+            "lbl_sharing_capabilities": "Freigabe-Berechtigung",
+            "sum_teams_details": "💬 Microsoft Teams",
+            "lbl_teams_total": "Teams gesamt",
+            "lbl_public_teams": "Öffentliche Teams (Risiko)",
+            "lbl_private_teams": "Private Teams",
+            "sum_exchange_table": "✉️ Exchange Online Postfach-Details",
+            "sum_sharepoint_table": "🌐 SharePoint Online Website-Details",
+            "sum_teams_table": "👥 Teams-Details (Kanallisten & Gäste)",
+            "lbl_governance_compliance_audit": "🛡️ Identity Governance & Compliance GRC-Audit",
+            "lbl_entra_governance": "🔑 Identity Governance (Entra ID)",
+            "lbl_ca_policies": "Bedingter Zugriff (CA-Richtlinien)",
+            "lbl_policies": "Richtlinien",
+            "lbl_ca_enabled": "CA Richtlinien Aktiviert",
+            "lbl_ca_report_only": "CA Richtlinien im Report-only Modus",
+            "lbl_access_packages": "Zugriffspakete (Access Packages)",
+            "lbl_access_reviews": "Zugriffsüberprüfungen (Access Reviews)",
+            "lbl_purview_compliance": "🔒 Microsoft Purview Compliance & Information Protection",
+            "lbl_sensitivity_labels": "Vertraulichkeitslabels (Sensitivity Labels)",
+            "lbl_label_names": "Labelnamen:",
+            "lbl_copilot_exclusion": "Copilot-Ausschluss aktiv (BlockContentAnalysisServices)",
+            "lbl_labels": "Labels",
+            "lbl_copilot_blocked_labels": "Copilot-ausgeschlossene Labels:",
+            "lbl_dlp_policies_count": "DLP Richtlinien (Data Loss Prevention)",
+            "lbl_dlp_policy_names": "DLP Richtliniennamen:",
+            "lbl_retention_labels_count": "Aufbewahrungsbezeichnungen (Retention Labels)",
+            "lbl_mandatory_labeling_status": "Labeling Pflicht (Mandatory)",
+            "lbl_yes": "Ja",
+            "lbl_no": "Nein",
+            "lbl_default_label_status": "Standard-Label",
+            "lbl_downgrade_justification_status": "Begründungspflicht bei Herabstufung",
+            "sum_purview_table": "🔒 Purview Sensitivity Labels Details",
+            "sec_score_status": "Secure Score Status",
+            "global_average": "M365 globaler Durchschnitt",
+            "deviation_average": "Abweichung zum Durchschnitt",
+            "footer_text": "M365 GRC Assistant Onboarding Portal · Erstellt von Michael Kirst-Neshva",
+            // Table headers auto translation
+            "Name": "Name", "UPN": "UPN", "Aktiv": "Aktiv", "MFA": "MFA", "Admin-Rollen": "Admin-Rollen", "Vorgesetzter": "Vorgesetzter",
+            "Gruppenname": "Gruppenname", "Klassifizierung": "Klassifizierung", "Sichtbarkeit": "Sichtbarkeit", "Besitzer": "Besitzer", "Mitglieder": "Mitglieder",
+            "Gerätename": "Gerätename", "Betriebssystem": "Betriebssystem", "OS-Version": "OS-Version", "Trust-Typ": "Trust-Typ", "Konform": "Konform", "Intune MDM": "Intune MDM", "Defender Status": "Defender Status",
+            "Postfach-Adresse": "Postfach-Adresse", "Typ": "Typ", "Quota Limit": "Quota Limit", "Vollzugriff (Delegiert)": "Vollzugriff (Delegiert)", "Send As (Delegiert)": "Send As (Delegiert)", "Weiterleitung": "Weiterleitung",
+            "Website-Name": "Website-Name", "URL": "URL", "Administratoren": "Administratoren", "Speicher (Bytes)": "Speicher (Bytes)",
+            "Teamname": "Teamname", "Gäste": "Gäste", "Kanäle": "Kanäle",
+            "Empfehlung": "Empfehlung", "Max. Punkte": "Max. Punkte", "Auswirkung": "Auswirkung", "Status": "Status", "Lizenzbedarf": "Lizenzbedarf", "Handlungsanweisung": "Handlungsanweisung",
+            // Badges / States auto translation
+            "Umgesetzt": "Umgesetzt", "Teilweise / Alternativ": "Teilweise / Alternativ", "Nicht umgesetzt": "Nicht umgesetzt"
+          },
+          en: {
+            "report_title": "M365 GRC Asset Audit Report",
+            "lbl_tenant": "Tenant",
+            "lbl_generated_at": "Generated at",
+            "stat_users_total": "Total Users",
+            "stat_active_accounts": "Active Accounts",
+            "stat_groups_total": "Total Groups",
+            "stat_entra_devices": "Entra ID Devices",
+            "stat_intune_managed": "Intune Managed",
+            "stat_defender_endpoints": "Defender Endpoints",
+            "card_tenant_details": "Tenant Details",
+            "lbl_name": "Name",
+            "lbl_tenant_id": "Tenant ID",
+            "lbl_security_defaults": "Identity Security Defaults",
+            "lbl_security_defaults_active": "Enabled",
+            "lbl_security_defaults_inactive": "Disabled",
+            "lbl_verified_domains": "Verified Domains:",
+            "card_mfa_sec": "MFA Security Status",
+            "card_groups_struct": "Groups Structure",
+            "lbl_m365_groups": "M365 / Unified Groups",
+            "lbl_sec_groups": "Security Groups",
+            "lbl_total_groups": "Total Groups",
+            "sum_users_details": "👤 User Details (Entra ID Users)",
+            "sum_groups_details": "👥 Groups Details (Entra ID Groups)",
+            "lbl_user_status": "👤 User Account Status",
+            "lbl_hardware_audit": "💻 Devices GRC Audit",
+            "lbl_registered_joined": "Registered/Joined in Entra ID (Hardware Asset)",
+            "lbl_managed_intune": "Managed in Intune (Compliance enforceable)",
+            "lbl_enrolled_defender": "Enrolled in Defender for Endpoint (EDR Coverage)",
+            "lbl_intune_coverage": "Intune Coverage (relative to Entra ID)",
+            "sum_devices_details": "💻 Device Details (Hardware & Compliance)",
+            "lbl_sec_score_recommendations": "🎯 Microsoft Secure Score & Recommendations",
+            "lbl_collab_mail_audit": "📬 Collaboration & Mail GRC Audit",
+            "sum_exchange_details": "✉️ Exchange Online",
+            "lbl_user_mailboxes": "User Mailboxes",
+            "lbl_shared_mailboxes": "Shared Mailboxes",
+            "lbl_transport_rules": "Mailflow Transport Rules",
+            "lbl_dkim_domains": "DKIM-Protected Domains",
+            "lbl_antimalware_policies": "Anti-Malware Policies",
+            "sum_sharepoint_details": "🌐 SharePoint & OneDrive",
+            "lbl_sp_sites": "Active SharePoint Sites",
+            "lbl_sharing_policy": "External Sharing Policy",
+            "lbl_sharing_capabilities": "File Sharing Capabilities",
+            "sum_teams_details": "💬 Microsoft Teams",
+            "lbl_teams_total": "Total Teams",
+            "lbl_public_teams": "Public Teams (Risk)",
+            "lbl_private_teams": "Private Teams",
+            "sum_exchange_table": "✉️ Exchange Online Mailbox Details",
+            "sum_sharepoint_table": "🌐 SharePoint Online Site Details",
+            "sum_teams_table": "👥 Teams Details (Channel Lists & Guests)",
+            "lbl_governance_compliance_audit": "🛡️ Identity Governance & Compliance GRC Audit",
+            "lbl_entra_governance": "🔑 Identity Governance (Entra ID)",
+            "lbl_ca_policies": "Conditional Access (CA Policies)",
+            "lbl_policies": "Policies",
+            "lbl_ca_enabled": "CA Policies Enabled",
+            "lbl_ca_report_only": "CA Policies in Report-only Mode",
+            "lbl_access_packages": "Access Packages",
+            "lbl_access_reviews": "Access Reviews",
+            "lbl_purview_compliance": "🔒 Microsoft Purview Compliance & Information Protection",
+            "lbl_sensitivity_labels": "Sensitivity Labels (Classification)",
+            "lbl_label_names": "Label Names:",
+            "lbl_copilot_exclusion": "Copilot Exclusion Active (BlockContentAnalysisServices)",
+            "lbl_labels": "Labels",
+            "lbl_copilot_blocked_labels": "Copilot Blocked Labels:",
+            "lbl_dlp_policies_count": "DLP Policies (Data Loss Prevention)",
+            "lbl_dlp_policy_names": "DLP Policy Names:",
+            "lbl_retention_labels_count": "Retention Labels",
+            "lbl_mandatory_labeling_status": "Mandatory Labeling",
+            "lbl_yes": "Yes",
+            "lbl_no": "No",
+            "lbl_default_label_status": "Default Label",
+            "lbl_downgrade_justification_status": "Downgrade Justification Required",
+            "sum_purview_table": "🔒 Purview Sensitivity Labels Details",
+            "sec_score_status": "Secure Score Status",
+            "global_average": "M365 Global Average",
+            "deviation_average": "Deviation to Average",
+            "footer_text": "M365 GRC Assistant Onboarding Portal · Created by Michael Kirst-Neshva",
+            // Table headers auto translation
+            "Name": "Name", "UPN": "UPN", "Aktiv": "Active", "MFA": "MFA", "Admin-Rollen": "Admin Roles", "Vorgesetzter": "Manager",
+            "Gruppenname": "Group Name", "Klassifizierung": "Classification", "Sichtbarkeit": "Visibility", "Besitzer": "Owners", "Mitglieder": "Members",
+            "Gerätename": "Device Name", "Betriebssystem": "Operating System", "OS-Version": "OS Version", "Trust-Typ": "Trust Type", "Konform": "Compliant", "Intune MDM": "Intune MDM", "Defender Status": "Defender Status",
+            "Postfach-Adresse": "Mailbox Address", "Typ": "Type", "Quota Limit": "Quota Limit", "Vollzugriff (Delegiert)": "Full Access (Delegated)", "Send As (Delegiert)": "Send As (Delegated)", "Weiterleitung": "Forwarding",
+            "Website-Name": "Site Name", "URL": "URL", "Administratoren": "Administrators", "Speicher (Bytes)": "Storage (Bytes)",
+            "Teamname": "Team Name", "Gäste": "Guests", "Kanäle": "Channels",
+            "Empfehlung": "Recommendation", "Max. Punkte": "Max. Score", "Auswirkung": "User Impact", "Status": "Status", "Lizenzbedarf": "License Required", "Handlungsanweisung": "Remediation",
+            // Badges / States auto translation
+            "Umgesetzt": "Implemented", "Teilweise / Alternativ": "Partial / Alternative", "Nicht umgesetzt": "Not Implemented"
+          }
+        };
+
+        let mfaChartInstance, userStatusChartInstance;
+
+        function updateCharts(lang) {
+          const mfaLabels = {
+            de: ['MFA Registriert', 'MFA Nicht registriert', 'Unbekannt'],
+            en: ['MFA Registered', 'MFA Not Registered', 'Unknown']
+          };
+          const statusLabels = {
+            de: ['Aktive Konten', 'Deaktivierte Konten'],
+            en: ['Active Accounts', 'Disabled Accounts']
+          };
+          
+          if (mfaChartInstance) {
+            mfaChartInstance.data.labels = mfaLabels[lang];
+            mfaChartInstance.update();
+          }
+          if (userStatusChartInstance) {
+            userStatusChartInstance.data.labels = statusLabels[lang];
+            userStatusChartInstance.update();
+          }
+        }
+
+        function switchLanguage(lang) {
+          document.documentElement.lang = lang;
+          
+          // Translate direct data-i18n tags
+          document.querySelectorAll("[data-i18n]").forEach(elem => {
+            const key = elem.getAttribute("data-i18n");
+            if (GrcTranslations[lang] && GrcTranslations[lang][key] !== undefined) {
+              elem.innerHTML = GrcTranslations[lang][key];
+            }
+          });
+
+          // Translate table headers automatically
+          document.querySelectorAll("th").forEach(th => {
+            const text = th.textContent.trim();
+            if (GrcTranslations[lang][text] !== undefined) {
+              th.innerHTML = GrcTranslations[lang][text];
+            }
+          });
+
+          // Translate badges
+          document.querySelectorAll(".badge").forEach(badge => {
+            const text = badge.textContent.trim();
+            if (GrcTranslations[lang][text] !== undefined) {
+              badge.innerHTML = GrcTranslations[lang][text];
+            }
+          });
+
+          // Handle dynamic score values translation
+          document.querySelectorAll("[data-i18n-score-text]").forEach(elem => {
+            const parts = elem.getAttribute("data-i18n-score-text").split("|");
+            const pct = parts[0];
+            const curr = parts[1];
+            const max = parts[2];
+            if (lang === "de") {
+              elem.innerHTML = `Ihr aktueller Sicherheitsindex liegt bei <strong style="color: #ffffff;">${pct}%</strong>. Das entspricht <strong style="color: #ffffff;">${curr} von ${max}</strong> möglichen Punkten.`;
+            } else {
+              elem.innerHTML = `Your current security index is <strong style="color: #ffffff;">${pct}%</strong>. This represents <strong style="color: #ffffff;">${curr} of ${max}</strong> possible points.`;
+            }
+          });
+
+          document.querySelectorAll("[data-i18n-diff]").forEach(elem => {
+            const diffVal = parseFloat(elem.getAttribute("data-i18n-diff"));
+            const absDiff = Math.abs(diffVal);
+            if (lang === "de") {
+              elem.textContent = diffVal >= 0 ? `${absDiff} Pkt. über dem Durchschnitt` : `${absDiff} Pkt. unter dem Durchschnitt`;
+            } else {
+              elem.textContent = diffVal >= 0 ? `${absDiff} pts above global average` : `${absDiff} pts below global average`;
+            }
+          });
+
+          updateCharts(lang);
+          localStorage.setItem("grc_lang", lang);
+        }
+
+        // Initialize Charts
+        mfaChartInstance = new Chart(document.getElementById('mfaChart'), {
             type: 'doughnut',
             data: {
                 labels: ['MFA Registriert', 'MFA Nicht registriert', 'Unbekannt'],
@@ -1180,8 +1473,7 @@ $htmlContent = @"
             }
         });
 
-        // User Status Chart
-        new Chart(document.getElementById('userStatusChart'), {
+        userStatusChartInstance = new Chart(document.getElementById('userStatusChart'), {
             type: 'doughnut',
             data: {
                 labels: ['Aktive Konten', 'Deaktivierte Konten'],
@@ -1201,6 +1493,13 @@ $htmlContent = @"
                     }
                 }
             }
+        });
+
+        // Initialize Language on load
+        document.addEventListener("DOMContentLoaded", () => {
+          const savedLang = localStorage.getItem("grc_lang") || "de";
+          document.getElementById("languageSelect").value = savedLang;
+          switchLanguage(savedLang);
         });
     </script>
 </body>
