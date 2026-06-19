@@ -7,9 +7,9 @@ on:
   # Wird vom Haupt-Workflow aufgerufen
   workflow_call:
 
-# Minimale Berechtigungen: nur Lesen (kein Push hier, Artefakte werden hochgeladen)
+# Purview muss in exports/ committen damit Generate-GRCReport die Daten findet
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   collect-purview:
@@ -50,10 +50,20 @@ jobs:
           $ErrorActionPreference = 'Stop'
           Write-Host "Starting Purview Summary Collector..." -ForegroundColor Cyan
           ./services/Purview/powershell/Get-PurviewSummary.ps1 `
-            -TenantId     $env:GRC_TENANT_ID `
-            -ClientId     $env:GRC_CLIENT_ID `
-            -CertificateBase64 $env:GRC_CERTIFICATE `
+            -TenantId            $env:GRC_TENANT_ID `
+            -ClientId            $env:GRC_CLIENT_ID `
+            -CertificateBase64   $env:GRC_CERTIFICATE `
             -CertificatePassword $env:GRC_CERTIFICATE_PASSWORD
+
+      - name: Commit and Push Purview exports
+        shell: bash
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin ${{ github.ref_name }}
+          git add -f exports/Purview/
+          git diff --quiet && git diff --staged --quiet || git commit -m "Auto-update Purview exports [skip ci]"
+          git push origin ${{ github.ref_name }}
 
       - name: Upload Purview artifacts
         if: always()

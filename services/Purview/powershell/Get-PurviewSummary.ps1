@@ -394,13 +394,15 @@ try {
             $reportData.SensitivityLabelNames = ($labelNames | Where-Object { $_ }) -join '; '
 
             $reportData.SensitivityLabelsDetails = $labelsResponse.value | ForEach-Object {
-                $labelName = if ($_.name) { $_.name } else { $_.displayName }
+                $item = $_
+                $labelName = if ($item.PSObject.Properties['name'] -and $item.name) { $item.name } else { $item.displayName }
                 [Ordered]@{
-                    Id          = $_.id
+                    Id          = $item.id
                     Name        = $labelName
-                    Description = $_.description
-                    IsActive    = $_.isActive
-                    Sensitivity = $_.sensitivity
+                    Description = if ($item.PSObject.Properties['description']) { $item.description } else { $null }
+                    IsActive    = if ($item.PSObject.Properties['isActive'])    { $item.isActive }    else { $null }
+                    Sensitivity = if ($item.PSObject.Properties['sensitivity']) { $item.sensitivity } else { $null }
+                    Color       = if ($item.PSObject.Properties['color'])       { $item.color }       else { $null }
                 }
             }
         }
@@ -483,9 +485,11 @@ try {
         $policySettings = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/beta/security/informationProtection/labelPolicySettings' -ErrorAction SilentlyContinue
         if ($policySettings) {
             $reportData.LabelPolicySettings = [Ordered]@{
-                IsMandatory                    = $policySettings.isMandatory
-                DefaultLabelId                 = $policySettings.defaultLabelId
-                DowngradeJustificationRequired = $policySettings.downgradeSensitivityLabelJustificationRequired
+                IsMandatory                    = if ($policySettings.PSObject.Properties['isMandatory'])                                       { $policySettings.isMandatory }                                       else { $null }
+                DefaultLabelId                 = if ($policySettings.PSObject.Properties['defaultLabelId'])                                    { $policySettings.defaultLabelId }                                    else { $null }
+                DowngradeJustificationRequired = if ($policySettings.PSObject.Properties['downgradeSensitivityLabelJustificationRequired'])    { $policySettings.downgradeSensitivityLabelJustificationRequired }    else { $null }
+                MandatoryLabelEnabled          = if ($policySettings.PSObject.Properties['mandatoryLabelEnabled'])                             { $policySettings.mandatoryLabelEnabled }                             else { $null }
+                OutlookRecommendedLabelEnabled = if ($policySettings.PSObject.Properties['outlookRecommendedLabelEnabled'])                    { $policySettings.outlookRecommendedLabelEnabled }                    else { $null }
             }
         }
     } catch {
