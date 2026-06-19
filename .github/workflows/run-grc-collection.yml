@@ -72,14 +72,18 @@ jobs:
         cd services/EntraID/Users/powershell
         ./Get-TenantInfo.ps1 -TenantId $env:GRC_TENANT_ID -ClientId $env:GRC_CLIENT_ID -CertificateBase64 $env:GRC_CERTIFICATE
         
-        # 2. Users
+        # 2. Users Summary & Full Details
         Write-Host "Running User Summary Collector..." -ForegroundColor Yellow
         ./Get-UserSummary.ps1 -TenantId $env:GRC_TENANT_ID -ClientId $env:GRC_CLIENT_ID -CertificateBase64 $env:GRC_CERTIFICATE
+        Write-Host "Running User Full Details Collector..." -ForegroundColor Yellow
+        ./Get-UserFullDetails.ps1 -TenantId $env:GRC_TENANT_ID -ClientId $env:GRC_CLIENT_ID -CertificateBase64 $env:GRC_CERTIFICATE
         
-        # 3. Groups
+        # 3. Groups Summary & Full Details
         Write-Host "Running Group Summary Collector..." -ForegroundColor Yellow
         cd ../../Groups/powershell
         ./Get-GroupSummary.ps1 -TenantId $env:GRC_TENANT_ID -ClientId $env:GRC_CLIENT_ID -CertificateBase64 $env:GRC_CERTIFICATE
+        Write-Host "Running Group Full Details Collector..." -ForegroundColor Yellow
+        ./Get-GroupFullDetails.ps1 -TenantId $env:GRC_TENANT_ID -ClientId $env:GRC_CLIENT_ID -CertificateBase64 $env:GRC_CERTIFICATE
         
         # 4. Entra Devices
         Write-Host "Running Entra ID Devices Collector..." -ForegroundColor Yellow
@@ -91,25 +95,34 @@ jobs:
         cd ../../Intune-Devices/powershell
         ./Get-IntuneDevices.ps1 -TenantId $env:GRC_TENANT_ID -ClientId $env:GRC_CLIENT_ID -CertificateBase64 $env:GRC_CERTIFICATE
 
-        # 6. Defender Devices
+        # 6. Defender Devices & Combined Device Full Details
         Write-Host "Running Defender Endpoint Collector..." -ForegroundColor Yellow
         cd ../../Defender-Devices/powershell
         ./Get-DefenderDevices.ps1 -TenantId $env:GRC_TENANT_ID -ClientId $env:GRC_CLIENT_ID -CertificateBase64 $env:GRC_CERTIFICATE
+        Write-Host "Running Device Full Details Collector..." -ForegroundColor Yellow
+        cd ../../powershell
+        ./Get-DeviceFullDetails.ps1 -TenantId $env:GRC_TENANT_ID -ClientId $env:GRC_CLIENT_ID -CertificateBase64 $env:GRC_CERTIFICATE
 
-        # 7. Exchange Online
+        # 7. Exchange Online Summary & Full Details
         Write-Host "Running Exchange Online Summary Collector..." -ForegroundColor Yellow
-        cd ../../../ExchangeOnline/powershell
+        cd ../../ExchangeOnline/powershell
         ./Get-ExchangeSummary.ps1 -TenantId $env:GRC_TENANT_ID -ClientId $env:GRC_CLIENT_ID -CertificateBase64 $env:GRC_CERTIFICATE
+        Write-Host "Running Exchange Online Full Details Collector..." -ForegroundColor Yellow
+        ./Get-ExchangeFullDetails.ps1 -TenantId $env:GRC_TENANT_ID -ClientId $env:GRC_CLIENT_ID -CertificateBase64 $env:GRC_CERTIFICATE
 
-        # 8. SharePoint Online
+        # 8. SharePoint Online Summary & Full Details
         Write-Host "Running SharePoint Online Summary Collector..." -ForegroundColor Yellow
         cd ../../SharePoint/powershell
         ./Get-SharePointSummary.ps1 -TenantId $env:GRC_TENANT_ID -ClientId $env:GRC_CLIENT_ID -CertificateBase64 $env:GRC_CERTIFICATE
+        Write-Host "Running SharePoint Online Full Details Collector..." -ForegroundColor Yellow
+        ./Get-SharePointFullDetails.ps1 -TenantId $env:GRC_TENANT_ID -ClientId $env:GRC_CLIENT_ID -CertificateBase64 $env:GRC_CERTIFICATE
 
-        # 9. Microsoft Teams
+        # 9. Microsoft Teams Summary & Full Details
         Write-Host "Running Microsoft Teams Summary Collector..." -ForegroundColor Yellow
         cd ../../Teams/powershell
         ./Get-TeamsSummary.ps1 -TenantId $env:GRC_TENANT_ID -ClientId $env:GRC_CLIENT_ID -CertificateBase64 $env:GRC_CERTIFICATE
+        Write-Host "Running Microsoft Teams Full Details Collector..." -ForegroundColor Yellow
+        ./Get-TeamsFullDetails.ps1 -TenantId $env:GRC_TENANT_ID -ClientId $env:GRC_CLIENT_ID -CertificateBase64 $env:GRC_CERTIFICATE
 
         # 10. Entra ID Governance
         Write-Host "Running Entra ID Governance Summary Collector..." -ForegroundColor Yellow
@@ -118,6 +131,14 @@ jobs:
 
         # NOTE: Purview (DLP + Retention Labels) runs in a separate Windows job.
         # See: .github/workflows/purview-collection.yml
+
+    - name: Commit and Push Asset exports
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git pull --rebase origin ${{ github.ref_name }}
+        git add -f exports/EntraID/ exports/Devices/ exports/ExchangeOnline/ exports/SharePoint/ exports/Teams/
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update Asset exports [skip ci]" && git push)
 
 
   # Purview runs on windows-latest (required for CSP-certificate + IPPS thumbprint auth)
