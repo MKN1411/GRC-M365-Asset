@@ -387,11 +387,14 @@ try {
         $publishedToGroups = @()
         
         foreach ($policy in $ippsPolicies) {
-            if ($policy.Labels -contains $guid -or $policy.Labels -contains $name) {
-                $scopedPolicies += $policy.Name
+            $policyLabels = Get-GrcSafeProperty -InputObject $policy -Name 'Labels'
+            $policyName = Get-GrcSafeProperty -InputObject $policy -Name 'Name'
+            if ($policyLabels -contains $guid -or $policyLabels -contains $name) {
+                $scopedPolicies += $policyName
                 # Get location bindings / target distribution
-                if ($policy.UserLocation) {
-                    foreach ($loc in $policy.UserLocation) {
+                $userLocation = Get-GrcSafeProperty -InputObject $policy -Name 'UserLocation'
+                if ($userLocation) {
+                    foreach ($loc in $userLocation) {
                         if ($loc -eq 'All') {
                             $publishedToUsers += 'All Users'
                         } else {
@@ -399,8 +402,9 @@ try {
                         }
                     }
                 }
-                if ($policy.ModernGroupLocation) {
-                    foreach ($grp in $policy.ModernGroupLocation) {
+                $modernGroupLocation = Get-GrcSafeProperty -InputObject $policy -Name 'ModernGroupLocation'
+                if ($modernGroupLocation) {
+                    foreach ($grp in $modernGroupLocation) {
                         $publishedToGroups += $grp
                     }
                 }
