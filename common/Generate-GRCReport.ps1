@@ -154,7 +154,7 @@ function Get-GrcHtmlTable {
     $sb = [System.Text.StringBuilder]::new()
     $null = $sb.Append("<div class='table-wrapper'><table class='data-table'><thead><tr>")
     foreach ($h in $Headers) {
-        $null = $sb.Append("<th>$h</th>")
+        $null = $sb.Append("<th data-i18n-hdr='$h'>$h</th>")
     }
     $null = $sb.Append("</tr></thead><tbody>")
     foreach ($row in $Data) {
@@ -165,7 +165,7 @@ function Get-GrcHtmlTable {
             if ($null -eq $val) {
                 $valStr = "-"
             } elseif ($val -is [bool]) {
-                $valStr = if ($val) { "<span class='badge success'>Ja</span>" } else { "<span class='badge danger'>Nein</span>" }
+                $valStr = if ($val) { "<span class='badge success' data-i18n-badge='Ja'>Ja</span>" } else { "<span class='badge danger' data-i18n-badge='Nein'>Nein</span>" }
             } elseif ($val -is [array] -or $val -is [System.Collections.IEnumerable] -and $val -isnot [string]) {
                 # Format license SKU codes, directory roles, group memberships, channel lists, Site Collection Admins
                 $cleanItems = @()
@@ -279,7 +279,7 @@ function Get-GrcPurviewTable {
     $null = $sb.Append("<div class='table-wrapper'><table class='data-table'><thead><tr>")
     $headers = @("Labelname", "Copilot Sperre", "Scope Files", "Scope Emails", "Scope Sites", "Verschlüsselt", "Richtlinien")
     foreach ($h in $headers) {
-        $null = $sb.Append("<th>$h</th>")
+        $null = $sb.Append("<th data-i18n-hdr='$h'>$h</th>")
     }
     $null = $sb.Append("</tr></thead><tbody>")
 
@@ -315,7 +315,7 @@ function Get-GrcPurviewTable {
                 $valStr = "-"
             } elseif ($val -is [bool] -or $val -eq "True" -or $val -eq "False") {
                 $boolVal = ($val -eq $true -or $val -eq "True")
-                $valStr = if ($boolVal) { "<span class='badge success'>Ja</span>" } else { "<span class='badge danger'>Nein</span>" }
+                $valStr = if ($boolVal) { "<span class='badge success' data-i18n-badge='Ja'>Ja</span>" } else { "<span class='badge danger' data-i18n-badge='Nein'>Nein</span>" }
             } elseif ($val -is [array] -or $val -is [System.Collections.IEnumerable] -and $val -isnot [string]) {
                 $cleanItems = @()
                 foreach ($item in $val) {
@@ -405,7 +405,8 @@ function Get-GrcSecureScoreSectionHtml {
                 </div>
             </div>
         </div>
-"@)
+"@
+)
     }
 
     # 2. Group Details by Microsoft Product / Category
@@ -447,7 +448,7 @@ function Get-GrcSecureScoreSectionHtml {
 
             $null = $sb.Append("<details class='collector-detail'><summary>$groupName ($($list.Count) Empfehlungen)</summary>")
             $null = $sb.Append("<div class='table-wrapper'><table class='data-table'>")
-            $null = $sb.Append("<thead><tr><th>Empfehlung</th><th>Max. Punkte</th><th>Auswirkung</th><th>Status</th><th>Lizenzbedarf</th><th>Handlungsanweisung</th></tr></thead><tbody>")
+            $null = $sb.Append("<thead><tr><th data-i18n-hdr='Empfehlung'>Empfehlung</th><th data-i18n-hdr='Max. Punkte'>Max. Punkte</th><th data-i18n-hdr='Auswirkung'>Auswirkung</th><th data-i18n-hdr='Status'>Status</th><th data-i18n-hdr='Lizenzbedarf'>Lizenzbedarf</th><th data-i18n-hdr='Handlungsanweisung'>Handlungsanweisung</th></tr></thead><tbody>")
 
             foreach ($item in $list) {
                 # Format status badge
@@ -476,7 +477,7 @@ function Get-GrcSecureScoreSectionHtml {
                 $null = $sb.Append("<td style='font-weight: 500;'>$titleStr</td>")
                 $null = $sb.Append("<td>$maxScoreStr</td>")
                 $null = $sb.Append("<td>$impactStr</td>")
-                $null = $sb.Append("<td><span class='$badgeClass'>$badgeText</span></td>")
+                $null = $sb.Append("<td><span class='$badgeClass' data-i18n-badge='$badgeText'>$badgeText</span></td>")
                 $null = $sb.Append("<td style='font-size: 0.85rem; color: #a5b4fc; font-weight: 500;'>$licenseStr</td>")
                 $null = $sb.Append("<td style='font-size: 0.85rem; max-width: 320px; white-space: normal; line-height: 1.45; color: var(--text-muted);'>$remediationStr</td>")
                 $null = $sb.Append("</tr>")
@@ -1282,7 +1283,10 @@ $htmlContent = @"
             "Teamname": "Teamname", "Gäste": "Gäste", "Kanäle": "Kanäle",
             "Empfehlung": "Empfehlung", "Max. Punkte": "Max. Punkte", "Auswirkung": "Auswirkung", "Status": "Status", "Lizenzbedarf": "Lizenzbedarf", "Handlungsanweisung": "Handlungsanweisung",
             // Badges / States auto translation
-            "Umgesetzt": "Umgesetzt", "Teilweise / Alternativ": "Teilweise / Alternativ", "Nicht umgesetzt": "Nicht umgesetzt"
+            "Umgesetzt": "Umgesetzt", "Teilweise / Alternativ": "Teilweise / Alternativ", "Nicht umgesetzt": "Nicht umgesetzt",
+            "Ja": "Ja", "Nein": "Nein",
+            // Purview Table headers
+            "Labelname": "Labelname", "Copilot Sperre": "Copilot Sperre", "Scope Files": "Scope Files", "Scope Emails": "Scope Emails", "Scope Sites": "Scope Sites", "Verschlüsselt": "Verschlüsselt", "Richtlinien": "Richtlinien"
           },
           en: {
             "report_title": "M365 GRC Asset Audit Report",
@@ -1370,7 +1374,10 @@ $htmlContent = @"
             "Teamname": "Team Name", "Gäste": "Guests", "Kanäle": "Channels",
             "Empfehlung": "Recommendation", "Max. Punkte": "Max. Score", "Auswirkung": "User Impact", "Status": "Status", "Lizenzbedarf": "License Required", "Handlungsanweisung": "Remediation",
             // Badges / States auto translation
-            "Umgesetzt": "Implemented", "Teilweise / Alternativ": "Partial / Alternative", "Nicht umgesetzt": "Not Implemented"
+            "Umgesetzt": "Implemented", "Teilweise / Alternativ": "Partial / Alternative", "Nicht umgesetzt": "Not Implemented",
+            "Ja": "Yes", "Nein": "No",
+            // Purview Table headers
+            "Labelname": "Label Name", "Copilot Sperre": "Copilot Block", "Scope Files": "Scope Files", "Scope Emails": "Scope Emails", "Scope Sites": "Scope Sites", "Verschlüsselt": "Encrypted", "Richtlinien": "Policies"
           }
         };
 
@@ -1409,17 +1416,23 @@ $htmlContent = @"
 
           // Translate table headers automatically
           document.querySelectorAll("th").forEach(th => {
-            const text = th.textContent.trim();
-            if (GrcTranslations[lang][text] !== undefined) {
-              th.innerHTML = GrcTranslations[lang][text];
+            const key = th.getAttribute("data-i18n-hdr") || th.textContent.trim();
+            if (!th.getAttribute("data-i18n-hdr")) {
+              th.setAttribute("data-i18n-hdr", key);
+            }
+            if (GrcTranslations[lang] && GrcTranslations[lang][key] !== undefined) {
+              th.innerHTML = GrcTranslations[lang][key];
             }
           });
 
           // Translate badges
           document.querySelectorAll(".badge").forEach(badge => {
-            const text = badge.textContent.trim();
-            if (GrcTranslations[lang][text] !== undefined) {
-              badge.innerHTML = GrcTranslations[lang][text];
+            const key = badge.getAttribute("data-i18n-badge") || badge.textContent.trim();
+            if (!badge.getAttribute("data-i18n-badge")) {
+              badge.setAttribute("data-i18n-badge", key);
+            }
+            if (GrcTranslations[lang] && GrcTranslations[lang][key] !== undefined) {
+              badge.innerHTML = GrcTranslations[lang][key];
             }
           });
 
