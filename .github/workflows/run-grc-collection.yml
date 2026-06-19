@@ -137,9 +137,14 @@ jobs:
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
-      with:
-        # Pull latest so we get the exports/ committed by collect-assets
-        ref: ${{ github.ref }}
+
+    - name: Pull latest commits from all collection jobs
+      # Both collect-assets and collect-purview commit exports/ independently.
+      # We must git pull here to get ALL their commits before generating the report.
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git pull --rebase origin ${{ github.ref_name }}
 
     - name: Generate HTML GRC Report
       shell: pwsh

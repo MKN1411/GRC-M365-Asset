@@ -389,13 +389,20 @@ try {
             $reportData.TotalSensitivityLabels = @($labelsResponse.value).Count
 
             $labelNames = $labelsResponse.value | ForEach-Object {
-                if ($_.name) { $_.name } else { $_.displayName }
+                # v1.0 endpoint returns 'displayName'; beta returns 'name'
+                $n = if ($_.PSObject.Properties['displayName'] -and $_.displayName) { $_.displayName }
+                     elseif ($_.PSObject.Properties['name'] -and $_.name)           { $_.name }
+                     else                                                            { $null }
+                $n
             }
             $reportData.SensitivityLabelNames = ($labelNames | Where-Object { $_ }) -join '; '
 
             $reportData.SensitivityLabelsDetails = $labelsResponse.value | ForEach-Object {
                 $item = $_
-                $labelName = if ($item.PSObject.Properties['name'] -and $item.name) { $item.name } else { $item.displayName }
+                # Resolve label name: displayName (v1.0) takes priority over name (beta)
+                $labelName = if ($item.PSObject.Properties['displayName'] -and $item.displayName) { $item.displayName }
+                             elseif ($item.PSObject.Properties['name'] -and $item.name)            { $item.name }
+                             else                                                                   { $null }
                 [Ordered]@{
                     Id          = $item.id
                     Name        = $labelName
@@ -406,6 +413,7 @@ try {
                 }
             }
         }
+
     } catch {
         Write-Warning "Could not query Sensitivity Labels via Graph: $_"
     }
