@@ -95,4 +95,24 @@ if ($AiAgentMode) {
 } else {
     # Local admin and workflow environments get file exports
     Export-GRCAssetData -ServiceName "EntraID" -AssetName "TenantInfo" -Data @($assetReport)
+
+    # Query Subscriptions
+    try {
+        $subscriptions = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/directory/subscriptions" -ErrorAction SilentlyContinue
+        if ($subscriptions -and $subscriptions.value) {
+            Export-GRCAssetData -ServiceName "EntraID" -AssetName "Subscriptions" -Data $subscriptions.value
+        }
+    } catch {
+        Write-Verbose "Could not retrieve tenant subscriptions: $_"
+    }
+
+    # Query Subscribed SKUs
+    try {
+        $subscribedSkus = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/subscribedSkus" -ErrorAction SilentlyContinue
+        if ($subscribedSkus -and $subscribedSkus.value) {
+            Export-GRCAssetData -ServiceName "EntraID" -AssetName "SubscribedSkus" -Data $subscribedSkus.value
+        }
+    } catch {
+        Write-Verbose "Could not retrieve tenant subscribed SKUs: $_"
+    }
 }

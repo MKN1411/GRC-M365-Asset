@@ -90,7 +90,6 @@ $endpoints = @(
     [PSCustomObject]@{ Service = "Devices"; Asset = "DeviceEnrollmentConfigurations"; Uri = "https://graph.microsoft.com/v1.0/deviceManagement/deviceEnrollmentConfigurations" }
     [PSCustomObject]@{ Service = "Devices"; Asset = "ManagedDeviceOverview"; Uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDeviceOverview" }
     [PSCustomObject]@{ Service = "Devices"; Asset = "RoleDefinitions"; Uri = "https://graph.microsoft.com/v1.0/deviceManagement/roleDefinitions" }
-    [PSCustomObject]@{ Service = "EntraID"; Asset = "Subscriptions"; Uri = "https://graph.microsoft.com/v1.0/directory/subscriptions" }
 )
 
 $combinedOutput = @{}
