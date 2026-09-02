@@ -1,8 +1,8 @@
 name: GRC Asset Collection
 
 on:
-  schedule:
-    - cron: '0 2 * * *' # Täglich um 02:00 Uhr
+#  schedule:
+#    - cron: '0 2 * * *' # Täglich um 02:00 Uhr
   workflow_dispatch: # Manuelle Ausführung ermöglichen
 
 # Top-level permissions required for secrets: inherit to propagate to workflow_call jobs
